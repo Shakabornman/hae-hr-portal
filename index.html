@@ -1,0 +1,1237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HAE Staff Records — HR Portal</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap');
+
+  :root {
+    --navy:   #1E3A5F;
+    --teal:   #1A4A35;
+    --steel:  #4A7FA5;
+    --paper:  #F7F6F3;
+    --white:  #FFFFFF;
+    --ink:    #1A1C22;
+    --mid:    #6B7280;
+    --rule:   #E2E0DA;
+    --green:  #2EAA6F;
+    --amber:  #D97706;
+    --red:    #C0392B;
+    --light-navy: #EBF1F7;
+    --light-teal: #E6F4EE;
+    --light-red:  #FEF2F2;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background: var(--paper);
+    color: var(--ink);
+    font-size: 14px;
+    line-height: 1.5;
+    min-height: 100vh;
+  }
+
+  /* ── LOGIN SCREEN ── */
+  #login-screen {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--navy);
+    padding: 24px;
+  }
+
+  .login-card {
+    background: var(--white);
+    border-radius: 12px;
+    padding: 48px 40px;
+    width: 100%;
+    max-width: 400px;
+    text-align: center;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+  }
+
+  .login-logo {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--mid);
+    margin-bottom: 6px;
+  }
+
+  .login-title {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--navy);
+    margin-bottom: 6px;
+  }
+
+  .login-sub {
+    font-size: 13px;
+    color: var(--mid);
+    margin-bottom: 36px;
+  }
+
+  .btn-google {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    width: 100%;
+    padding: 14px 20px;
+    background: var(--white);
+    border: 1.5px solid var(--rule);
+    border-radius: 8px;
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--ink);
+    cursor: pointer;
+    transition: all 0.15s;
+    margin-bottom: 12px;
+  }
+
+  .btn-google:hover { background: var(--paper); border-color: var(--steel); }
+
+  .btn-email-toggle {
+    font-size: 13px;
+    color: var(--steel);
+    background: none;
+    border: none;
+    cursor: pointer;
+    text-decoration: underline;
+    margin-top: 4px;
+  }
+
+  .email-login { display: none; margin-top: 20px; text-align: left; }
+  .email-login.show { display: block; }
+
+  .field-group { margin-bottom: 16px; }
+  .field-group label { display: block; font-size: 12px; font-weight: 600; color: var(--mid); margin-bottom: 5px; letter-spacing: 0.05em; text-transform: uppercase; }
+  .field-group input, .field-group select, .field-group textarea {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1.5px solid var(--rule);
+    border-radius: 6px;
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    color: var(--ink);
+    background: var(--white);
+    transition: border-color 0.15s;
+    outline: none;
+  }
+  .field-group input:focus, .field-group select:focus, .field-group textarea:focus { border-color: var(--steel); }
+
+  .btn-primary {
+    width: 100%;
+    padding: 12px;
+    background: var(--navy);
+    color: var(--white);
+    border: none;
+    border-radius: 8px;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s;
+    margin-top: 4px;
+  }
+  .btn-primary:hover { background: #162d4a; }
+
+  .login-error { color: var(--red); font-size: 12px; margin-top: 10px; display: none; }
+
+  /* ── APP SHELL ── */
+  #app { display: none; min-height: 100vh; }
+
+  /* HEADER */
+  .app-header {
+    background: var(--navy);
+    padding: 0 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 56px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .app-header-left {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .app-brand {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--white);
+    letter-spacing: 0.04em;
+  }
+
+  .app-brand span {
+    color: #7EB8D9;
+    font-weight: 500;
+    margin-left: 6px;
+    font-size: 12px;
+  }
+
+  .header-user {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .user-name { font-size: 12px; color: #9CA3AF; }
+
+  .btn-signout {
+    font-size: 11px;
+    color: #6B7280;
+    background: none;
+    border: 1px solid #374151;
+    border-radius: 4px;
+    padding: 4px 10px;
+    cursor: pointer;
+    font-family: 'Inter', sans-serif;
+    transition: all 0.15s;
+  }
+  .btn-signout:hover { color: var(--white); border-color: #6B7280; }
+
+  /* TAB NAV */
+  .tab-nav {
+    background: var(--white);
+    border-bottom: 1px solid var(--rule);
+    display: flex;
+    padding: 0 24px;
+  }
+
+  .tab-btn {
+    padding: 14px 20px;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--mid);
+    background: none;
+    border: none;
+    border-bottom: 3px solid transparent;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .tab-btn:hover { color: var(--ink); }
+  .tab-btn.active { color: var(--navy); border-bottom-color: var(--navy); }
+
+  /* MAIN CONTENT */
+  .app-main {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 32px 24px 60px;
+  }
+
+  /* PANELS */
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  /* SEARCH */
+  .search-wrap {
+    position: relative;
+    margin-bottom: 24px;
+  }
+
+  .search-wrap input {
+    width: 100%;
+    padding: 12px 16px 12px 44px;
+    border: 1.5px solid var(--rule);
+    border-radius: 8px;
+    font-size: 14px;
+    font-family: 'Inter', sans-serif;
+    background: var(--white);
+    outline: none;
+    transition: border-color 0.15s;
+  }
+
+  .search-wrap input:focus { border-color: var(--steel); }
+
+  .search-icon {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--mid);
+    pointer-events: none;
+  }
+
+  /* EMPLOYEE LIST */
+  .emp-list { display: flex; flex-direction: column; gap: 8px; }
+
+  .emp-row {
+    background: var(--white);
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    transition: all 0.15s;
+    gap: 12px;
+  }
+
+  .emp-row:hover { border-color: var(--steel); box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+
+  .emp-info { flex: 1; min-width: 0; }
+
+  .emp-name {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--ink);
+    margin-bottom: 2px;
+  }
+
+  .emp-meta {
+    font-size: 12px;
+    color: var(--mid);
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .badge {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 2px 8px;
+    border-radius: 3px;
+    white-space: nowrap;
+  }
+
+  .badge-hae  { background: var(--light-navy); color: var(--navy); }
+  .badge-krc  { background: var(--light-teal); color: var(--teal); }
+  .badge-vuma { background: #FEF3C7; color: #92400E; }
+  .badge-warn { background: #FEF3C7; color: #92400E; }
+  .badge-ok   { background: var(--light-teal); color: var(--teal); }
+  .badge-inactive { background: var(--light-red); color: var(--red); }
+
+  .missing-count {
+    font-size: 11px;
+    color: var(--amber);
+    font-weight: 500;
+    white-space: nowrap;
+  }
+
+  /* EDIT PANEL */
+  .edit-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    margin-bottom: 28px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--rule);
+  }
+
+  .btn-back {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: var(--steel);
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-family: 'Inter', sans-serif;
+    padding: 0;
+    flex-shrink: 0;
+    margin-top: 3px;
+  }
+
+  .btn-back:hover { color: var(--navy); }
+
+  .edit-emp-name {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--navy);
+    margin-bottom: 4px;
+  }
+
+  .edit-emp-meta { font-size: 13px; color: var(--mid); }
+
+  /* SECTION CARDS */
+  .section-card {
+    background: var(--white);
+    border: 1px solid var(--rule);
+    border-radius: 10px;
+    margin-bottom: 16px;
+    overflow: hidden;
+  }
+
+  .section-head {
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--rule);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .section-head h3 {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--mid);
+  }
+
+  .section-body { padding: 20px; }
+
+  .form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+
+  .form-grid .full { grid-column: 1 / -1; }
+
+  /* READONLY FIELDS */
+  .readonly-field {
+    background: var(--paper);
+    border-color: var(--rule) !important;
+    color: var(--mid) !important;
+    cursor: not-allowed;
+  }
+
+  /* SAVE BAR */
+  .save-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: var(--white);
+    border-top: 1px solid var(--rule);
+    padding: 14px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    box-shadow: 0 -4px 16px rgba(0,0,0,0.08);
+    z-index: 50;
+  }
+
+  .save-bar-left { font-size: 13px; color: var(--mid); }
+  .save-bar-left strong { color: var(--ink); }
+
+  .save-bar-right { display: flex; gap: 10px; }
+
+  .btn-cancel {
+    padding: 10px 20px;
+    background: none;
+    border: 1.5px solid var(--rule);
+    border-radius: 6px;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--mid);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .btn-cancel:hover { border-color: var(--mid); color: var(--ink); }
+
+  .btn-save {
+    padding: 10px 24px;
+    background: var(--teal);
+    border: none;
+    border-radius: 6px;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--white);
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+
+  .btn-save:hover { background: #133a28; }
+  .btn-save:disabled { background: var(--mid); cursor: not-allowed; }
+
+  /* TOAST */
+  .toast {
+    position: fixed;
+    bottom: 80px;
+    right: 24px;
+    background: var(--ink);
+    color: var(--white);
+    padding: 12px 20px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+    opacity: 0;
+    transform: translateY(8px);
+    transition: all 0.2s;
+    pointer-events: none;
+    z-index: 200;
+  }
+
+  .toast.show { opacity: 1; transform: translateY(0); }
+  .toast.success { background: var(--teal); }
+  .toast.error   { background: var(--red); }
+
+  /* LOADING */
+  .loading {
+    text-align: center;
+    padding: 48px;
+    color: var(--mid);
+    font-size: 13px;
+  }
+
+  .spinner {
+    width: 24px; height: 24px;
+    border: 2px solid var(--rule);
+    border-top-color: var(--navy);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 0 auto 12px;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* EMPTY STATE */
+  .empty {
+    text-align: center;
+    padding: 48px 24px;
+    color: var(--mid);
+  }
+
+  .empty-icon { font-size: 32px; margin-bottom: 12px; }
+  .empty h3 { font-size: 15px; font-weight: 600; color: var(--ink); margin-bottom: 4px; }
+  .empty p { font-size: 13px; }
+
+  /* NEW EMPLOYEE */
+  .page-title {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--navy);
+    margin-bottom: 24px;
+  }
+
+  @media (max-width: 600px) {
+    .form-grid { grid-template-columns: 1fr; }
+    .form-grid .full { grid-column: 1; }
+    .app-main { padding: 20px 16px 80px; }
+    .save-bar { padding: 12px 16px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════ LOGIN SCREEN ═══════════════ -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-logo">Hospital at Ekhaya</div>
+    <div class="login-title">HR Staff Portal</div>
+    <div class="login-sub">Authorised HR personnel only</div>
+
+    <button class="btn-google" onclick="signInGoogle()">
+      <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615z"/><path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z"/><path fill="#FBBC05" d="M3.964 10.71c-.18-.54-.282-1.117-.282-1.71s.102-1.17.282-1.71V4.958H.957C.347 6.173 0 7.548 0 9s.348 2.827.957 4.042l3.007-2.332z"/><path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z"/></svg>
+      Sign in with Google
+    </button>
+
+    <button class="btn-email-toggle" onclick="toggleEmailLogin()">Sign in with email instead</button>
+
+    <div class="email-login" id="email-login">
+      <div class="field-group">
+        <label>Email</label>
+        <input type="email" id="login-email" placeholder="your@email.com">
+      </div>
+      <div class="field-group">
+        <label>Password</label>
+        <input type="password" id="login-password" placeholder="••••••••">
+      </div>
+      <button class="btn-primary" onclick="signInEmail()">Sign In</button>
+    </div>
+
+    <div class="login-error" id="login-error"></div>
+  </div>
+</div>
+
+<!-- ═══════════════ APP SHELL ═══════════════ -->
+<div id="app">
+  <header class="app-header">
+    <div class="app-header-left">
+      <div class="app-brand">HOSPITAL AT EKHAYA <span>HR Portal</span></div>
+    </div>
+    <div class="header-user">
+      <span class="user-name" id="user-name-display"></span>
+      <button class="btn-signout" onclick="signOut()">Sign out</button>
+    </div>
+  </header>
+
+  <nav class="tab-nav">
+    <button class="tab-btn active" onclick="showTab('search')">Staff Records</button>
+    <button class="tab-btn" onclick="showTab('new')">New Employee</button>
+  </nav>
+
+  <main class="app-main">
+
+    <!-- SEARCH PANEL -->
+    <div class="panel active" id="panel-search">
+      <div class="search-wrap">
+        <svg class="search-icon" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        <input type="text" id="search-input" placeholder="Search by name, employee number, or position…" oninput="filterEmployees()">
+      </div>
+      <div id="emp-list-container">
+        <div class="loading"><div class="spinner"></div>Loading staff records…</div>
+      </div>
+    </div>
+
+    <!-- EDIT PANEL -->
+    <div class="panel" id="panel-edit">
+      <div class="edit-header">
+        <button class="btn-back" onclick="backToList()">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+          All staff
+        </button>
+        <div>
+          <div class="edit-emp-name" id="edit-emp-name">—</div>
+          <div class="edit-emp-meta" id="edit-emp-meta">—</div>
+        </div>
+      </div>
+
+      <div id="edit-form-body"></div>
+
+      <div style="height:70px"></div>
+
+      <div class="save-bar">
+        <div class="save-bar-left">Editing <strong id="save-bar-name">—</strong></div>
+        <div class="save-bar-right">
+          <button class="btn-cancel" onclick="backToList()">Cancel</button>
+          <button class="btn-save" onclick="saveEmployee()" id="btn-save">Save changes</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- NEW EMPLOYEE PANEL -->
+    <div class="panel" id="panel-new">
+      <div class="page-title">Add New Employee</div>
+      <div id="new-form-body"></div>
+      <div style="height:70px"></div>
+      <div class="save-bar">
+        <div class="save-bar-left">New employee record</div>
+        <div class="save-bar-right">
+          <button class="btn-cancel" onclick="showTab('search')">Cancel</button>
+          <button class="btn-save" onclick="saveNewEmployee()" id="btn-save-new">Create record</button>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- Firebase SDK -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getAuth, signInWithPopup, GoogleAuthProvider, signInWithEmailAndPassword, signOut as fbSignOut, onAuthStateChanged }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { getFirestore, collection, getDocs, doc, updateDoc, setDoc, serverTimestamp }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+// ── YOUR FIREBASE CONFIG ──────────────────────────────────────────────────
+const firebaseConfig = {
+  apiKey:            "AIzaSyBla6UBluNcWVKPSU8U30IuTSubLb7R2Kc",
+  authDomain:        "hae-vuma-92fca.firebaseapp.com",
+  projectId:         "hae-vuma-92fca",
+  storageBucket:     "hae-vuma-92fca.firebasestorage.app",
+  messagingSenderId: "1052424261313",
+  appId:             "1:1052424261313:web:a4bebe68d6f9ba14fa0e40"
+};
+
+const app      = initializeApp(firebaseConfig);
+const auth     = getAuth(app);
+const db       = getFirestore(app);
+const provider = new GoogleAuthProvider();
+
+// ── STATE ─────────────────────────────────────────────────────────────────
+let allEmployees  = [];
+let currentDocId  = null;
+let currentEmpDoc = null;
+
+// ── AUTH ──────────────────────────────────────────────────────────────────
+window.signInGoogle = async () => {
+  try {
+    await signInWithPopup(auth, provider);
+  } catch (e) {
+    showLoginError(e.message);
+  }
+};
+
+window.signInEmail = async () => {
+  const email = document.getElementById('login-email').value;
+  const pass  = document.getElementById('login-password').value;
+  try {
+    await signInWithEmailAndPassword(auth, email, pass);
+  } catch (e) {
+    showLoginError("Invalid email or password.");
+  }
+};
+
+window.signOut = async () => {
+  await fbSignOut(auth);
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('app').style.display = 'none';
+  allEmployees = [];
+};
+
+window.toggleEmailLogin = () => {
+  document.getElementById('email-login').classList.toggle('show');
+};
+
+function showLoginError(msg) {
+  const el = document.getElementById('login-error');
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+
+onAuthStateChanged(auth, async (user) => {
+  if (user) {
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    document.getElementById('user-name-display').textContent = user.displayName || user.email;
+    await loadEmployees();
+  }
+});
+
+// ── LOAD EMPLOYEES ────────────────────────────────────────────────────────
+async function loadEmployees() {
+  try {
+    const snap = await getDocs(collection(db, 'employees'));
+    allEmployees = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    allEmployees.sort((a, b) => (a.fullName || '').localeCompare(b.fullName || ''));
+    renderList(allEmployees);
+  } catch (e) {
+    document.getElementById('emp-list-container').innerHTML =
+      `<div class="empty"><div class="empty-icon">⚠️</div><h3>Could not load records</h3><p>${e.message}</p></div>`;
+  }
+}
+
+// ── RENDER LIST ───────────────────────────────────────────────────────────
+function renderList(employees) {
+  const container = document.getElementById('emp-list-container');
+  if (!employees.length) {
+    container.innerHTML = `<div class="empty"><div class="empty-icon">🔍</div><h3>No results</h3><p>Try a different search term.</p></div>`;
+    return;
+  }
+
+  const facilityBadge = f => {
+    const map = { HAE: 'badge-hae', KRC: 'badge-krc', Vuma: 'badge-vuma' };
+    return `<span class="badge ${map[f] || 'badge-hae'}">${f || 'HAE'}</span>`;
+  };
+
+  const html = `<div class="emp-list">${employees.map(emp => {
+    const missing  = (emp.missingFields || []).length;
+    const inactive = emp.active === false;
+    const statusBadge = inactive
+      ? `<span class="badge badge-inactive">Resigned</span>`
+      : missing > 0
+        ? `<span class="missing-count">⚠ ${missing} field${missing > 1 ? 's' : ''} missing</span>`
+        : `<span class="badge badge-ok">Complete</span>`;
+
+    return `<div class="emp-row" onclick="openEmployee('${emp.id}')">
+      <div class="emp-info">
+        <div class="emp-name">${emp.fullName || '—'}</div>
+        <div class="emp-meta">
+          <span>${emp.employeeNumber || ''}</span>
+          <span>${emp.position || '—'}</span>
+          ${facilityBadge(emp.facility)}
+        </div>
+      </div>
+      ${statusBadge}
+      <svg width="16" height="16" fill="none" stroke="#9CA3AF" stroke-width="2" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
+    </div>`;
+  }).join('')}</div>`;
+
+  container.innerHTML = html;
+}
+
+// ── FILTER ────────────────────────────────────────────────────────────────
+window.filterEmployees = () => {
+  const q = document.getElementById('search-input').value.toLowerCase();
+  if (!q) { renderList(allEmployees); return; }
+  const filtered = allEmployees.filter(e =>
+    (e.fullName || '').toLowerCase().includes(q) ||
+    (e.employeeNumber || '').toLowerCase().includes(q) ||
+    (e.position || '').toLowerCase().includes(q) ||
+    (e.department || '').toLowerCase().includes(q)
+  );
+  renderList(filtered);
+};
+
+// ── OPEN EMPLOYEE ─────────────────────────────────────────────────────────
+window.openEmployee = (docId) => {
+  currentDocId  = docId;
+  currentEmpDoc = allEmployees.find(e => e.id === docId) || {};
+  const emp     = currentEmpDoc;
+
+  document.getElementById('edit-emp-name').textContent = emp.fullName || '—';
+  document.getElementById('edit-emp-meta').textContent =
+    `${emp.employeeNumber || ''} · ${emp.position || ''} · ${emp.facility || ''}`;
+  document.getElementById('save-bar-name').textContent = emp.fullName || '—';
+
+  document.getElementById('edit-form-body').innerHTML = buildEditForm(emp);
+
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('panel-edit').classList.add('active');
+  window.scrollTo(0, 0);
+};
+
+// ── BUILD EDIT FORM ───────────────────────────────────────────────────────
+function buildEditForm(emp) {
+  const ro = (val) => `<input class="readonly-field" value="${val || '—'}" readonly>`;
+  const inp = (id, val, type='text') =>
+    `<input id="f_${id}" type="${type}" value="${val || ''}">`;
+  const sel = (id, val, opts) =>
+    `<select id="f_${id}">${opts.map(o =>
+      `<option value="${o}" ${o === val ? 'selected' : ''}>${o || '— select —'}</option>`
+    ).join('')}</select>`;
+
+  const missing = emp.missingFields || [];
+  const missingHtml = missing.length
+    ? `<div style="background:#FEF3C7;border:1px solid #FCD34D;border-radius:6px;padding:12px 16px;margin-bottom:16px;font-size:13px;color:#92400E;">
+        <strong>⚠ Missing fields:</strong> ${missing.join(', ')}
+       </div>`
+    : `<div style="background:var(--light-teal);border:1px solid #A7F3D0;border-radius:6px;padding:12px 16px;margin-bottom:16px;font-size:13px;color:var(--teal);">
+        ✓ This record is complete
+       </div>`;
+
+  const bank = emp.banking || {};
+  const addr = emp.residentialAddress || {};
+  const reg  = emp.professionalRegistration || {};
+
+  return `
+    ${missingHtml}
+
+    <div class="section-card">
+      <div class="section-head"><h3>Identity — from Simplepay</h3></div>
+      <div class="section-body">
+        <div class="form-grid">
+          <div class="field-group"><label>Full Name</label>${ro(emp.fullName)}</div>
+          <div class="field-group"><label>Employee No.</label>${ro(emp.employeeNumber)}</div>
+          <div class="field-group"><label>ID Number</label>${ro(emp.idNumber)}</div>
+          <div class="field-group"><label>Date of Birth</label>${ro(emp.dateOfBirth)}</div>
+          <div class="field-group"><label>Position</label>${ro(emp.position)}</div>
+          <div class="field-group"><label>Facility</label>${ro(emp.facility)}</div>
+          <div class="field-group"><label>Start Date</label>${ro(emp.startDate)}</div>
+          <div class="field-group"><label>Status</label>${ro(emp.active ? 'Active' : 'Resigned')}</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-card">
+      <div class="section-head"><h3>Complete These Fields</h3></div>
+      <div class="section-body">
+        <div class="form-grid">
+          <div class="field-group">
+            <label>Gender</label>
+            ${sel('gender', emp.gender, ['', 'Male', 'Female', 'Other'])}
+          </div>
+          <div class="field-group">
+            <label>Equity Group</label>
+            ${sel('equityGroup', emp.equityGroup, ['', 'African', 'Coloured', 'Indian', 'White', 'Prefer not to say'])}
+          </div>
+          <div class="field-group">
+            <label>Department</label>
+            ${sel('department', emp.department, ['', 'Nursing', 'Administration', 'Support Services', 'Security', 'Management', 'Maintenance', 'Pharmacy', 'Kitchen', 'Finance', 'HR', 'Consulting'])}
+          </div>
+          <div class="field-group">
+            <label>Contract Type</label>
+            ${sel('contractType', emp.contractType, ['', 'Permanent', 'Fixed-Term', 'Part-Time', 'Locum', 'Agency'])}
+          </div>
+          <div class="field-group">
+            <label>Email</label>
+            ${inp('email', emp.email, 'email')}
+          </div>
+          <div class="field-group">
+            <label>Cellphone</label>
+            ${inp('cellphone', emp.cellphone)}
+          </div>
+          <div class="field-group">
+            <label>Disability</label>
+            ${sel('disability', emp.disability, ['', 'None', 'Yes — see file'])}
+          </div>
+          <div class="field-group">
+            <label>Direct Manager</label>
+            ${inp('managerId', emp.managerId)}
+          </div>
+        </div>
+        <div class="form-grid" style="margin-top:12px">
+          <div class="field-group">
+            <label>POPIA Consent</label>
+            ${sel('popiaConsent', emp.popiaConsent ? 'Yes' : 'No', ['No', 'Yes'])}
+          </div>
+          <div class="field-group">
+            <label>Background Check Consent</label>
+            ${sel('backgroundCheckConsent', emp.backgroundCheckConsent ? 'Yes' : 'No', ['No', 'Yes'])}
+          </div>
+          <div class="field-group">
+            <label>Consent Date</label>
+            ${inp('consentDate', emp.consentDate, 'date')}
+          </div>
+          <div class="field-group">
+            <label>HR Onboarding Complete</label>
+            ${sel('hrOnboardingComplete', emp.hrOnboardingComplete ? 'Yes' : 'No', ['No', 'Yes'])}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-card">
+      <div class="section-head"><h3>Professional Registration</h3></div>
+      <div class="section-body">
+        <div class="form-grid">
+          <div class="field-group">
+            <label>Registration Body</label>
+            ${sel('reg_body', reg.body, ['', 'SANC', 'HPCSA', 'SAPC', 'SARB', 'None / N/A'])}
+          </div>
+          <div class="field-group">
+            <label>Registration Number</label>
+            ${inp('reg_number', reg.registrationNumber)}
+          </div>
+          <div class="field-group">
+            <label>Registration Category</label>
+            ${inp('reg_category', reg.category)}
+          </div>
+          <div class="field-group">
+            <label>Expiry Date</label>
+            ${inp('reg_expiry', reg.expiryDate, 'date')}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-card">
+      <div class="section-head"><h3>Banking Details — from Simplepay</h3></div>
+      <div class="section-body">
+        <div class="form-grid">
+          <div class="field-group"><label>Bank</label>${ro(bank.bank)}</div>
+          <div class="field-group"><label>Account Number</label>${ro(bank.accountNumber)}</div>
+          <div class="field-group"><label>Branch Code</label>${ro(bank.branchCode)}</div>
+          <div class="field-group"><label>Account Type</label>${ro(bank.accountType)}</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-card">
+      <div class="section-head"><h3>Address — from Simplepay</h3></div>
+      <div class="section-body">
+        <div class="form-grid">
+          <div class="field-group"><label>Street</label>${ro(`${addr.streetNo || ''} ${addr.street || ''}`.trim())}</div>
+          <div class="field-group"><label>Suburb</label>${ro(addr.suburb)}</div>
+          <div class="field-group"><label>City</label>${ro(addr.city)}</div>
+          <div class="field-group"><label>Code</label>${ro(addr.code)}</div>
+        </div>
+      </div>
+    </div>`;
+}
+
+// ── SAVE EMPLOYEE ─────────────────────────────────────────────────────────
+window.saveEmployee = async () => {
+  const btn = document.getElementById('btn-save');
+  btn.disabled = true;
+  btn.textContent = 'Saving…';
+
+  try {
+    const get = (id) => {
+      const el = document.getElementById(`f_${id}`);
+      return el ? el.value.trim() : '';
+    };
+    const bool = (id) => get(id) === 'Yes';
+
+    const updates = {
+      gender:             get('gender'),
+      equityGroup:        get('equityGroup'),
+      department:         get('department'),
+      contractType:       get('contractType'),
+      email:              get('email'),
+      cellphone:          get('cellphone'),
+      disability:         get('disability'),
+      managerId:          get('managerId'),
+      popiaConsent:       bool('popiaConsent'),
+      backgroundCheckConsent: bool('backgroundCheckConsent'),
+      consentDate:        get('consentDate'),
+      hrOnboardingComplete: bool('hrOnboardingComplete'),
+      professionalRegistration: {
+        body:               get('reg_body'),
+        registrationNumber: get('reg_number'),
+        category:           get('reg_category'),
+        expiryDate:         get('reg_expiry'),
+      },
+      updatedAt: new Date().toISOString(),
+      updatedBy: auth.currentUser?.email || 'unknown',
+    };
+
+    // Recalculate missing fields
+    const missing = [];
+    if (!updates.gender)       missing.push('gender');
+    if (!updates.equityGroup)  missing.push('equityGroup');
+    if (!updates.contractType) missing.push('contractType');
+    if (!updates.department)   missing.push('department');
+    if (!updates.email)        missing.push('email');
+    if (!updates.cellphone)    missing.push('cellphone');
+    if (!updates.popiaConsent) missing.push('popiaConsent');
+    if (!updates.professionalRegistration.body &&
+        ['Registered Nurse','Enrolled Nurse','Enrolled Nurse Auxiliary','Nursing Manager'].includes(currentEmpDoc?.position))
+      missing.push('professionalRegistration');
+    updates.missingFields = missing;
+
+    await updateDoc(doc(db, 'employees', currentDocId), updates);
+
+    // Update local cache
+    const idx = allEmployees.findIndex(e => e.id === currentDocId);
+    if (idx >= 0) allEmployees[idx] = { ...allEmployees[idx], ...updates };
+
+    showToast('Record saved', 'success');
+    setTimeout(() => backToList(), 800);
+
+  } catch (e) {
+    showToast('Save failed: ' + e.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Save changes';
+  }
+};
+
+// ── NEW EMPLOYEE FORM ─────────────────────────────────────────────────────
+function buildNewForm() {
+  const inp = (id, type='text', placeholder='') =>
+    `<input id="n_${id}" type="${type}" placeholder="${placeholder}">`;
+  const sel = (id, opts) =>
+    `<select id="n_${id}">${opts.map(o => `<option value="${o}">${o || '— select —'}</option>`).join('')}</select>`;
+
+  return `
+    <div class="section-card">
+      <div class="section-head"><h3>Identity</h3></div>
+      <div class="section-body">
+        <div class="form-grid">
+          <div class="field-group"><label>Employee Number *</label>${inp('employeeNumber','text','e.g. 0051')}</div>
+          <div class="field-group"><label>Full Name (Surname, First) *</label>${inp('fullName','text','e.g. Smith, John')}</div>
+          <div class="field-group"><label>ID Number *</label>${inp('idNumber')}</div>
+          <div class="field-group"><label>Date of Birth</label>${inp('dateOfBirth','date')}</div>
+          <div class="field-group"><label>Gender</label>${sel('gender',['','Male','Female','Other'])}</div>
+          <div class="field-group"><label>Equity Group</label>${sel('equityGroup',['','African','Coloured','Indian','White','Prefer not to say'])}</div>
+          <div class="field-group"><label>Nationality</label>${inp('nationality','text','South African')}</div>
+          <div class="field-group"><label>Disability</label>${sel('disability',['','None','Yes — see file'])}</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-card">
+      <div class="section-head"><h3>Contact</h3></div>
+      <div class="section-body">
+        <div class="form-grid">
+          <div class="field-group"><label>Email *</label>${inp('email','email')}</div>
+          <div class="field-group"><label>Cellphone</label>${inp('cellphone')}</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-card">
+      <div class="section-head"><h3>Employment</h3></div>
+      <div class="section-body">
+        <div class="form-grid">
+          <div class="field-group"><label>Facility *</label>${sel('facility',['','HAE','KRC','Vuma'])}</div>
+          <div class="field-group"><label>Pay Point</label>${sel('payPoint',['','H@E','KRC','Vuma'])}</div>
+          <div class="field-group"><label>Department</label>${sel('department',['','Nursing','Administration','Support Services','Security','Management','Maintenance','Pharmacy','Kitchen','Finance','HR','Consulting'])}</div>
+          <div class="field-group"><label>Position / Job Title *</label>${inp('position')}</div>
+          <div class="field-group"><label>Contract Type</label>${sel('contractType',['','Permanent','Fixed-Term','Part-Time','Locum','Agency'])}</div>
+          <div class="field-group"><label>Start Date *</label>${inp('startDate','date')}</div>
+          <div class="field-group"><label>Payment Method</label>${sel('paymentMethod',['EFT','Cash'])}</div>
+          <div class="field-group"><label>Direct Manager</label>${inp('managerId')}</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-card">
+      <div class="section-head"><h3>Professional Registration</h3></div>
+      <div class="section-body">
+        <div class="form-grid">
+          <div class="field-group"><label>Registration Body</label>${sel('reg_body',['','SANC','HPCSA','SAPC','SARB','None / N/A'])}</div>
+          <div class="field-group"><label>Registration Number</label>${inp('reg_number')}</div>
+          <div class="field-group"><label>Category</label>${inp('reg_category')}</div>
+          <div class="field-group"><label>Expiry Date</label>${inp('reg_expiry','date')}</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-card">
+      <div class="section-head"><h3>Banking</h3></div>
+      <div class="section-body">
+        <div class="form-grid">
+          <div class="field-group"><label>Bank</label>${sel('bank',['','Capitec Bank','ABSA Bank','Standard Bank','First National Bank','Nedbank','GoTyme Bank','Other'])}</div>
+          <div class="field-group"><label>Account Number</label>${inp('accountNumber')}</div>
+          <div class="field-group"><label>Branch Code</label>${inp('branchCode')}</div>
+          <div class="field-group"><label>Account Type</label>${sel('accountType',['Current (Cheque)','Savings'])}</div>
+          <div class="field-group"><label>Holder Relationship</label>${sel('holderRelationship',['Own','Other'])}</div>
+          <div class="field-group"><label>Holder Name (if not own)</label>${inp('holderName')}</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-card">
+      <div class="section-head"><h3>Consent</h3></div>
+      <div class="section-body">
+        <div class="form-grid">
+          <div class="field-group"><label>POPIA Consent</label>${sel('popiaConsent',['No','Yes'])}</div>
+          <div class="field-group"><label>Background Check Consent</label>${sel('backgroundCheckConsent',['No','Yes'])}</div>
+          <div class="field-group"><label>Consent Date</label>${inp('consentDate','date')}</div>
+        </div>
+      </div>
+    </div>`;
+}
+
+window.saveNewEmployee = async () => {
+  const btn = document.getElementById('btn-save-new');
+  btn.disabled = true;
+  btn.textContent = 'Creating…';
+
+  const get = (id) => {
+    const el = document.getElementById(`n_${id}`);
+    return el ? el.value.trim() : '';
+  };
+  const bool = (id) => get(id) === 'Yes';
+
+  const empNum  = get('employeeNumber');
+  const name    = get('fullName');
+  const idNum   = get('idNumber');
+  const start   = get('startDate');
+  const facility = get('facility');
+  const position = get('position');
+
+  if (!empNum || !name || !idNum || !start || !facility || !position) {
+    showToast('Fill in all required fields (*)', 'error');
+    btn.disabled = false;
+    btn.textContent = 'Create record';
+    return;
+  }
+
+  const docId = `EMP${empNum.padStart(4,'0')}`;
+
+  const newDoc = {
+    employeeNumber: empNum,
+    fullName:       name,
+    lastName:       name.split(',')[0].trim(),
+    firstName:      name.includes(',') ? name.split(',')[1].trim() : '',
+    idNumber:       idNum,
+    dateOfBirth:    get('dateOfBirth'),
+    gender:         get('gender'),
+    equityGroup:    get('equityGroup'),
+    disability:     get('disability'),
+    nationality:    get('nationality') || 'South African',
+    email:          get('email'),
+    cellphone:      get('cellphone'),
+    facility:       facility,
+    payPoint:       get('payPoint'),
+    department:     get('department'),
+    position:       position,
+    contractType:   get('contractType'),
+    startDate:      start,
+    endDate:        '',
+    active:         true,
+    managerId:      get('managerId'),
+    accessLevel:    'authenticated',
+    paymentMethod:  get('paymentMethod'),
+    banking: {
+      bank:               get('bank'),
+      accountNumber:      get('accountNumber'),
+      branchCode:         get('branchCode'),
+      accountType:        get('accountType'),
+      holderRelationship: get('holderRelationship'),
+      holderName:         get('holderName'),
+    },
+    professionalRegistration: {
+      body:               get('reg_body'),
+      registrationNumber: get('reg_number'),
+      category:           get('reg_category'),
+      expiryDate:         get('reg_expiry'),
+    },
+    popiaConsent:           bool('popiaConsent'),
+    backgroundCheckConsent: bool('backgroundCheckConsent'),
+    consentDate:            get('consentDate'),
+    qualifications:         [],
+    employmentHistory:      [],
+    references:             [],
+    notes:                  [],
+    hrOnboardingComplete:   false,
+    documentsUploaded:      false,
+    missingFields:          [],
+    importedFromSimplepay:  false,
+    createdAt:              new Date().toISOString(),
+    updatedAt:              new Date().toISOString(),
+    createdBy:              auth.currentUser?.email || 'unknown',
+  };
+
+  try {
+    await setDoc(doc(db, 'employees', docId), newDoc);
+    allEmployees.push({ id: docId, ...newDoc });
+    allEmployees.sort((a,b) => (a.fullName||'').localeCompare(b.fullName||''));
+    showToast(`${name} added successfully`, 'success');
+    setTimeout(() => showTab('search'), 800);
+  } catch (e) {
+    showToast('Failed to create record: ' + e.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Create record';
+  }
+};
+
+// ── NAVIGATION ────────────────────────────────────────────────────────────
+window.showTab = (tab) => {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+
+  if (tab === 'search') {
+    document.getElementById('panel-search').classList.add('active');
+    document.querySelectorAll('.tab-btn')[0].classList.add('active');
+    renderList(allEmployees);
+  } else if (tab === 'new') {
+    document.getElementById('panel-new').classList.add('active');
+    document.querySelectorAll('.tab-btn')[1].classList.add('active');
+    document.getElementById('new-form-body').innerHTML = buildNewForm();
+  }
+  window.scrollTo(0,0);
+};
+
+window.backToList = () => {
+  currentDocId = null;
+  currentEmpDoc = null;
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('panel-search').classList.add('active');
+  document.querySelectorAll('.tab-btn')[0].classList.add('active');
+  renderList(allEmployees);
+  window.scrollTo(0,0);
+};
+
+// ── TOAST ─────────────────────────────────────────────────────────────────
+window.showToast = (msg, type = '') => {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = `toast ${type} show`;
+  setTimeout(() => { t.className = 'toast'; }, 3000);
+};
+
+</script>
+</body>
+</html>
