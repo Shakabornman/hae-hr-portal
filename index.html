@@ -825,17 +825,19 @@ function buildEditForm(emp) {
     ${missingHtml}
 
     <div class="section-card">
-      <div class="section-head"><h3>Identity — from Simplepay</h3></div>
+      <div class="section-head"><h3>Identity</h3><span style="font-size:11px;color:var(--mid)">Employee No. and ID Number are locked</span></div>
       <div class="section-body">
         <div class="form-grid">
-          <div class="field-group"><label>Full Name</label>${ro(emp.fullName)}</div>
-          <div class="field-group"><label>Employee No.</label>${ro(emp.employeeNumber)}</div>
-          <div class="field-group"><label>ID Number</label>${ro(emp.idNumber)}</div>
-          <div class="field-group"><label>Date of Birth</label>${ro(emp.dateOfBirth)}</div>
-          <div class="field-group"><label>Position</label>${ro(emp.position)}</div>
-          <div class="field-group"><label>Facility</label>${ro(emp.facility)}</div>
-          <div class="field-group"><label>Start Date</label>${ro(emp.startDate)}</div>
-          <div class="field-group"><label>Status</label>${ro(emp.active ? 'Active' : 'Resigned')}</div>
+          <div class="field-group"><label>Full Name (Surname, First)</label>${inp('fullName', emp.fullName)}</div>
+          <div class="field-group"><label>Employee No. — locked</label>${ro(emp.employeeNumber)}</div>
+          <div class="field-group"><label>ID Number — locked</label>${ro(emp.idNumber)}</div>
+          <div class="field-group"><label>Date of Birth</label>${inp('dateOfBirth', emp.dateOfBirth, 'date')}</div>
+          <div class="field-group"><label>Position / Job Title</label>${inp('position', emp.position)}</div>
+          <div class="field-group"><label>Facility</label>${sel('facility', emp.facility, ['HAE','KRC','Vuma'])}</div>
+          <div class="field-group"><label>Pay Point</label>${sel('payPoint', emp.payPoint, ['H@E','KRC','Vuma'])}</div>
+          <div class="field-group"><label>Start Date</label>${inp('startDate', emp.startDate, 'date')}</div>
+          <div class="field-group"><label>End Date (resigned)</label>${inp('endDate', emp.endDate, 'date')}</div>
+          <div class="field-group"><label>Status</label>${sel('active', emp.active ? 'Active' : 'Resigned', ['Active','Resigned'])}</div>
         </div>
       </div>
     </div>
@@ -923,25 +925,31 @@ function buildEditForm(emp) {
     </div>
 
     <div class="section-card">
-      <div class="section-head"><h3>Banking Details — from Simplepay</h3></div>
+      <div class="section-head"><h3>Banking Details</h3></div>
       <div class="section-body">
         <div class="form-grid">
-          <div class="field-group"><label>Bank</label>${ro(bank.bank)}</div>
-          <div class="field-group"><label>Account Number</label>${ro(bank.accountNumber)}</div>
-          <div class="field-group"><label>Branch Code</label>${ro(bank.branchCode)}</div>
-          <div class="field-group"><label>Account Type</label>${ro(bank.accountType)}</div>
+          <div class="field-group"><label>Bank</label>${sel('bank_bank', bank.bank, ['','Capitec Bank','ABSA Bank','Standard Bank','First National Bank','Nedbank','GoTyme Bank','Other'])}</div>
+          <div class="field-group"><label>Account Number</label>${inp('bank_accountNumber', bank.accountNumber)}</div>
+          <div class="field-group"><label>Branch Code</label>${inp('bank_branchCode', bank.branchCode)}</div>
+          <div class="field-group"><label>Account Type</label>${sel('bank_accountType', bank.accountType, ['Current (Cheque)','Savings'])}</div>
+          <div class="field-group"><label>Holder Relationship</label>${sel('bank_holderRelationship', bank.holderRelationship, ['Own','Other'])}</div>
+          <div class="field-group"><label>Holder Name (if not own)</label>${inp('bank_holderName', bank.holderName)}</div>
+          <div class="field-group"><label>Payment Method</label>${sel('paymentMethod', emp.paymentMethod, ['EFT','Cash'])}</div>
+          <div class="field-group"><label>Income Tax Number</label>${inp('incomeTaxNumber', emp.incomeTaxNumber)}</div>
         </div>
       </div>
     </div>
 
     <div class="section-card">
-      <div class="section-head"><h3>Address — from Simplepay</h3></div>
+      <div class="section-head"><h3>Residential Address</h3></div>
       <div class="section-body">
         <div class="form-grid">
-          <div class="field-group"><label>Street</label>${ro(`${addr.streetNo || ''} ${addr.street || ''}`.trim())}</div>
-          <div class="field-group"><label>Suburb</label>${ro(addr.suburb)}</div>
-          <div class="field-group"><label>City</label>${ro(addr.city)}</div>
-          <div class="field-group"><label>Code</label>${ro(addr.code)}</div>
+          <div class="field-group"><label>Street Number</label>${inp('addr_streetNo', addr.streetNo)}</div>
+          <div class="field-group"><label>Street Name</label>${inp('addr_street', addr.street)}</div>
+          <div class="field-group"><label>Suburb</label>${inp('addr_suburb', addr.suburb)}</div>
+          <div class="field-group"><label>City</label>${inp('addr_city', addr.city)}</div>
+          <div class="field-group"><label>Postal Code</label>${inp('addr_code', addr.code)}</div>
+          <div class="field-group"><label>Country</label>${inp('addr_country', addr.country || 'South Africa')}</div>
         </div>
       </div>
     </div>`;
@@ -961,6 +969,18 @@ window.saveEmployee = async () => {
     const bool = (id) => get(id) === 'Yes';
 
     const updates = {
+      // Identity
+      fullName:           get('fullName'),
+      lastName:           get('fullName').split(',')[0].trim(),
+      firstName:          get('fullName').includes(',') ? get('fullName').split(',')[1].trim() : '',
+      dateOfBirth:        get('dateOfBirth'),
+      position:           get('position'),
+      facility:           get('facility'),
+      payPoint:           get('payPoint'),
+      startDate:          get('startDate'),
+      endDate:            get('endDate'),
+      active:             get('active') === 'Active',
+      // HR fields
       gender:             get('gender'),
       equityGroup:        get('equityGroup'),
       department:         get('department'),
@@ -973,11 +993,32 @@ window.saveEmployee = async () => {
       backgroundCheckConsent: bool('backgroundCheckConsent'),
       consentDate:        get('consentDate'),
       hrOnboardingComplete: bool('hrOnboardingComplete'),
+      // Professional registration
       professionalRegistration: {
         body:               get('reg_body'),
         registrationNumber: get('reg_number'),
         category:           get('reg_category'),
         expiryDate:         get('reg_expiry'),
+      },
+      // Banking
+      paymentMethod:      get('paymentMethod'),
+      incomeTaxNumber:    get('incomeTaxNumber'),
+      banking: {
+        bank:               get('bank_bank'),
+        accountNumber:      get('bank_accountNumber'),
+        branchCode:         get('bank_branchCode'),
+        accountType:        get('bank_accountType'),
+        holderRelationship: get('bank_holderRelationship'),
+        holderName:         get('bank_holderName'),
+      },
+      // Address
+      residentialAddress: {
+        streetNo: get('addr_streetNo'),
+        street:   get('addr_street'),
+        suburb:   get('addr_suburb'),
+        city:     get('addr_city'),
+        code:     get('addr_code'),
+        country:  get('addr_country') || 'South Africa',
       },
       updatedAt: new Date().toISOString(),
       updatedBy: auth.currentUser?.email || 'unknown',
