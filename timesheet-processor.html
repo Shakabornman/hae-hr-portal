@@ -503,14 +503,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 });
 
-// ── STEP NAVIGATION ───────────────────────────────────────────────────────
-window.goStep = function(n) {
-  for (let i = 1; i <= 5; i++) {
-    document.getElementById(`panel-${i}`).style.display = i === n ? 'block' : 'none';
-    const stepEl = document.getElementById(`step-${i}`);
-    stepEl.className = 'step' + (i === n ? ' active' : i < n ? ' done' : '');
-  }
-};
+// ── STEP NAVIGATION — defined below after export functions ───────────────
 
 // ── AI PROCESSING ─────────────────────────────────────────────────────────
 window.startProcessing = async function() {
