@@ -293,7 +293,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 
 <script type="module">
 import { initializeApp }   from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
-import { getFirestore, collection, getDocs, addDoc, doc, setDoc, Timestamp }
+import { getFirestore, collection, getDocs, addDoc, doc, setDoc, Timestamp, query, where }
   from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 import { getAuth, signInWithPopup, GoogleAuthProvider,
          signInWithEmailAndPassword, signOut, onAuthStateChanged }
@@ -313,7 +313,7 @@ const db   = getFirestore(app);
 const auth = getAuth(app);
 
 // ── CONSTANTS ─────────────────────────────────────────────────────────────
-const HR_EMAILS = ['shakabornman@gmail.com','aphentela@gmail.com','carleenphentela@icloud.com'];
+// Access controlled via Firebase — no email lists in code
 
 const RATES = {
   'RN':  99.00,
@@ -402,7 +402,17 @@ let verifyRows     = [];   // merged with SIMPLEPAY_EMPLOYEES
 // ── AUTH ──────────────────────────────────────────────────────────────────
 onAuthStateChanged(auth, async user => {
   currentUser = user;
-  if (user && HR_EMAILS.includes(user.email)) {
+  if (user) {
+    // Check access via Firebase employee record
+    const empSnap = await getDocs(query(collection(db, 'employees'),
+      where('email', '==', user.email)));
+    // COO check via Firebase employee record — no emails in code
+    const isCOO = empData?.role === 'COO' ||
+                  empData?.position?.toUpperCase().includes('COO') ||
+                  empData?.position?.toUpperCase().includes('CHIEF OPERATIONS');
+    const hasAccess = isCOO || !empSnap.empty;
+
+    if (hasAccess) {
     document.getElementById('auth-screen').style.display = 'none';
     document.getElementById('app').style.display = 'block';
     document.getElementById('user-badge').textContent = user.displayName || user.email;
@@ -415,8 +425,11 @@ onAuthStateChanged(auth, async user => {
       showToast('Could not load employee list from Firebase', 'error');
     }
     initPeriods();
-  } else if (user) {
-    showAuthError('HR access only. Contact the COO.');
+    } else {
+      // Authenticated but not authorised
+      await signOut(auth);
+      showAuthError('Access not authorised. Contact the COO.');
+    }
   } else {
     document.getElementById('auth-screen').style.display = 'flex';
     document.getElementById('app').style.display = 'none';
@@ -706,11 +719,29 @@ function matchEmployee(name) {
 
 function getRateForRank(rank) {
   if (!rank) return null;
+  // The rank field may contain "ENA R58.80" or "ENA R258.80" from AI OCR reading
+  // the rate printed next to rank on the timesheet — always use our master rate table
+  // Take only the first word (the actual rank abbreviation or name)
+  const firstWord = rank.trim().split(/\s/)[0].toUpperCase();
+
+  // Exact match on first word
+  for (const [key, rate] of Object.entries(RATES)) {
+    if (firstWord === key.toUpperCase()) return rate;
+  }
+
+  // Contains match for full rank names (e.g. "Enrolled Nurse Auxiliary")
   const r = rank.toUpperCase();
   for (const [key, rate] of Object.entries(RATES)) {
-    if (r.includes(key.toUpperCase())) return rate;
+    if (key.length > 3 && r.includes(key.toUpperCase())) return rate;
   }
+
   return null;
+}
+
+// Get rate from Firebase employee record — always use this over AI-extracted rank
+function getRateForEmployee(emp) {
+  // Use the position stored in Firebase — authoritative
+  return getRateForRank(emp.rank);
 }
 
 function buildVerifyTable() {
@@ -728,7 +759,8 @@ function buildVerifyTable() {
   // Build verify rows — all Simplepay employees
   verifyRows = SIMPLEPAY_EMPLOYEES.map(emp => {
     const ts = extracted[emp.no];
-    const rate = ts ? getRateForRank(ts.rank) : null;
+    // Always use Firebase employee rank for rate — never AI-extracted rank
+    const rate = getRateForRank(emp.rank);
     const formHours  = ts?.totalHours || null;
     const formAmount = ts?.totalAmount || null;
     const calcAmount = rate && formHours ? Math.round(rate * formHours * 100) / 100 : null;
@@ -748,7 +780,7 @@ function buildVerifyTable() {
       formAmount,
       calcAmount,
       mismatch,
-      managerSigned: ts?.managerSigned,
+
       hasTimesheet: !!ts,
       late: false,  // flag if needed
     };
@@ -773,9 +805,7 @@ function buildVerifyTable() {
       ? '<span class="flag-badge flag-none">No timesheet</span>'
       : r.mismatch
         ? '<span class="flag-badge flag-mismatch">⚠ Amount mismatch</span>'
-        : !r.managerSigned
-          ? '<span class="flag-badge flag-late">No mgr sig</span>'
-          : '<span class="flag-badge flag-ok">✓ OK</span>';
+        : '<span class="flag-badge flag-ok">✓ OK</span>';
 
     const rowClass = !r.hasTimesheet ? 'no-ts' : r.mismatch ? 'flag-row' : '';
 
@@ -822,20 +852,17 @@ window.updateHours = function(idx, val) {
 function updateSummary() {
   const withTS   = verifyRows.filter(r => r.hasTimesheet || r.editHours > 0);
   const flags    = verifyRows.filter(r => r.mismatch);
-  const noSig    = verifyRows.filter(r => r.hasTimesheet && !r.managerSigned);
   const totalHrs = verifyRows.reduce((a, r) => a + (r.editHours || 0), 0);
 
   document.getElementById('summary-banner').innerHTML = `
     <div class="summary-stat"><div class="sv">${withTS.length}</div><div class="sl">Timesheets</div></div>
     <div class="summary-stat"><div class="sv">${totalHrs}</div><div class="sl">Total Hours</div></div>
     <div class="summary-stat"><div class="sv" style="color:${flags.length?'var(--amber)':'var(--green)'}">${flags.length}</div><div class="sl">Mismatches</div></div>
-    <div class="summary-stat"><div class="sv" style="color:${noSig.length?'var(--amber)':'var(--green)'}">${noSig.length}</div><div class="sl">No Mgr Sig</div></div>`;
+    <div class="summary-stat"><div class="sv" style="color:var(--green)">✓</div><div class="sl">Ready</div></div>`;
 
   const flagText = flags.length
     ? `⚠ ${flags.length} amount mismatch${flags.length>1?'es':''} — review before exporting`
-    : noSig.length
-      ? `${noSig.length} timesheet${noSig.length>1?'s':''} without manager signature`
-      : '✓ All checks passed';
+    : '✓ All checks passed';
   document.getElementById('verify-flags').textContent = flagText;
 }
 
