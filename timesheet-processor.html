@@ -330,25 +330,21 @@ const RATES = {
 // Hourly ranks — only these staff have timesheets
 const HOURLY_RANKS = ['RN','EN','ENA','HCW',
   'Registered Nurse','Enrolled Nurse',
-  'Enrolled Nursing Auxiliary','Healthcare Worker',
-  'Prof Nr','Prof RN','Prof Nurse'];
+  'Enrolled Nursing Auxiliary','Enrolled Nurse Auxiliary',
+  'Healthcare Worker','Health Care Worker',
+  'Prof Nr','Prof RN','Prof Nurse','Professional Nurse'];
 
 // Employee list loaded from Firebase at runtime — never hardcoded
 let SIMPLEPAY_EMPLOYEES = [];
 
 async function loadHourlyEmployees() {
-  // Load all employees — filter to hourly ranks client-side
+  // Load ALL employees — no rank filter
+  // The Simplepay export only includes employees with hours > 0
   const snap = await getDocs(collection(db, 'employees'));
   const all = snap.docs.map(d => d.data());
 
-  // Filter to hourly-paid ranks only
   SIMPLEPAY_EMPLOYEES = all
-    .filter(e => {
-      const pos = (e.position || e.rank || '').trim();
-      return HOURLY_RANKS.some(r => pos.toLowerCase().includes(r.toLowerCase()));
-    })
     .map(e => {
-      // Simplepay number = employeeNumber without EMP prefix
       const empNo = e.employeeNumber || e.employeeId || '';
       const simplepayNo = empNo.replace(/^EMP0*/,'').padStart(4,'0');
       const fullName = (e.name || '').trim();
@@ -364,7 +360,11 @@ async function loadHourlyEmployees() {
         full: fullName,
       };
     })
+    .filter(e => e.no && e.full)  // must have employee number and name
     .sort((a,b) => a.last.localeCompare(b.last));
+
+  console.log('Loaded employees:', SIMPLEPAY_EMPLOYEES.length,
+    SIMPLEPAY_EMPLOYEES.map(e => e.full).join(', '));
 
   return SIMPLEPAY_EMPLOYEES;
 }
@@ -637,19 +637,47 @@ function fileToBase64(file) {
 }
 
 // ── MATCH & BUILD VERIFY TABLE ────────────────────────────────────────────
+function similarEnough(a, b) {
+  // Simple similarity — allow 1-2 character differences for handwriting variations
+  a = a.toLowerCase().replace(/[^a-z]/g,'');
+  b = b.toLowerCase().replace(/[^a-z]/g,'');
+  if (a === b) return true;
+  if (Math.abs(a.length - b.length) > 2) return false;
+  // Count differences
+  let diff = 0;
+  const len = Math.min(a.length, b.length);
+  for (let i = 0; i < len; i++) if (a[i] !== b[i]) diff++;
+  diff += Math.abs(a.length - b.length);
+  return diff <= 2;
+}
+
 function matchEmployee(name) {
   if (!name) return null;
-  const n = name.toLowerCase().replace(/[^a-z\s]/g,'').trim();
-  // Try last name match first
+  // Extract words — ignore initials (single letters with dots)
+  const words = name.toLowerCase()
+    .replace(/[^a-z\s]/g,' ')
+    .split(/\s+/)
+    .filter(w => w.length > 1);  // ignore single-letter initials
+
+  // Try exact last name match first
   for (const emp of SIMPLEPAY_EMPLOYEES) {
-    if (emp.last && n.includes(emp.last.toLowerCase())) return emp;
+    const last = emp.last.toLowerCase();
+    if (words.some(w => w === last)) return emp;
   }
-  // Try first name
+
+  // Try fuzzy last name match (handwriting variations)
   for (const emp of SIMPLEPAY_EMPLOYEES) {
-    if (emp.first && n.includes(emp.first.toLowerCase())) return emp;
+    const last = emp.last.toLowerCase();
+    if (words.some(w => similarEnough(w, last))) return emp;
   }
-  // No match — flag it
-  console.warn(`No employee match found for: "${name}" — not in Firebase employee records`);
+
+  // Try fuzzy first name match
+  for (const emp of SIMPLEPAY_EMPLOYEES) {
+    const first = emp.first.toLowerCase();
+    if (words.some(w => similarEnough(w, first))) return emp;
+  }
+
+  console.warn(\`No employee match found for: "\${name}" — not in Firebase employee records\`);
   return null;
 }
 
