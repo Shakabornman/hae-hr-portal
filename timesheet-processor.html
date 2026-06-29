@@ -559,7 +559,7 @@ Important rules:
 - Extract ALL timesheets on the page, not just the first one
 - managerSigned = true if there is a signature in the Manager Signature box`;
 
-  const response = await fetch('https://api.anthropic.com/v1/messages', {
+  const response = await fetch('https://hae-motivation-proxy.shakabornman.workers.dev', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
