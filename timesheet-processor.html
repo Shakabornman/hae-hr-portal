@@ -345,22 +345,44 @@ async function loadHourlyEmployees() {
 
   SIMPLEPAY_EMPLOYEES = all
     .map(e => {
+      // Employee number — handle both EMP0050 and O050 formats
       const empNo = e.employeeNumber || e.employeeId || '';
-      const simplepayNo = empNo.replace(/^EMP0*/,'').padStart(4,'0');
-      const fullName = (e.name || '').trim();
-      const nameParts = fullName.split(' ');
-      const last  = nameParts.slice(-1)[0] || '';
-      const first = nameParts.slice(0,-1).join(' ') || fullName;
+      // Extract numeric part only — strip any leading letters
+      const numPart = empNo.replace(/^[^0-9]*/,'');
+      const simplepayNo = numPart.padStart(4,'0');
+
+      // Name — Firebase stores firstName, lastName, and fullName separately
+      const firstName = (e.firstName || '').trim();
+      const lastName  = (e.lastName  || e.surname || '').trim();
+
+      // fullName may be "Last, First" or "First Last" — handle both
+      let full = (e.fullName || e.name || '').trim();
+      let last = lastName;
+      let first = firstName;
+
+      if (!last && full.includes(',')) {
+        // Format: "Thapane, Annie"
+        const parts = full.split(',');
+        last  = parts[0].trim();
+        first = parts[1]?.trim() || '';
+      } else if (!last && full) {
+        const parts = full.split(' ');
+        last  = parts.slice(-1)[0];
+        first = parts.slice(0,-1).join(' ');
+      }
+
+      if (!full) full = [first, last].filter(Boolean).join(' ');
+
       return {
-        no:   simplepayNo,
-        last,
-        first,
-        emp:  empNo,
-        rank: e.position || e.rank || '',
-        full: fullName,
+        no:    simplepayNo,
+        last:  last  || full,
+        first: first || '',
+        emp:   empNo,
+        rank:  e.position || e.rank || '',
+        full:  full,
       };
     })
-    .filter(e => e.no && e.full)  // must have employee number and name
+    .filter(e => e.full)  // must have a name
     .sort((a,b) => a.last.localeCompare(b.last));
 
   console.log('Loaded employees:', SIMPLEPAY_EMPLOYEES.length,
