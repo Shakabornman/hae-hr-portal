@@ -327,26 +327,50 @@ const RATES = {
   'Healthcare Worker': 28.79,
 };
 
-// Simplepay employee master — derived from the bulk export
-// Format: simplepayNo -> { lastName, firstName, empNo }
-const SIMPLEPAY_EMPLOYEES = [
-  { no:'0040', last:'Bonga',     first:'Thandiwe',   emp:'EMP0040' },
-  { no:'0033', last:'Bosman',    first:'Joyce',       emp:'EMP0033' },
-  { no:'0022', last:'Buthelezi', first:'Matshidiso',  emp:'EMP0022' },
-  { no:'0019', last:'Gumede',    first:'Shirley',     emp:'EMP0019' },
-  { no:'0021', last:'Kameis',    first:'Mairdilean',  emp:'EMP0021' },
-  { no:'0034', last:'Kekana',    first:'Lee-Anne',    emp:'EMP0034' },
-  { no:'0036', last:'Lansberg',  first:'Farida',      emp:'EMP0036' },
-  { no:'0037', last:'Madlala',   first:'Janice',      emp:'EMP0037' },
-  { no:'0026', last:'Maise',     first:'Rosslyn',     emp:'EMP0026' },
-  { no:'0038', last:'Makamba',   first:'Lahliwe',     emp:'EMP0038' },
-  { no:'0024', last:'Maqubu',    first:'Glen',        emp:'EMP0024' },
-  { no:'0023', last:'Mlozana',   first:'Prudence',    emp:'EMP0023' },
-  { no:'0032', last:'Philander', first:'Ernid',       emp:'EMP0032' },
-  { no:'0025', last:'Riet',      first:'Jenipha',     emp:'EMP0025' },
-  { no:'0020', last:'Sithebe',   first:'Ruth',        emp:'EMP0020' },
-  { no:'0041', last:'Williams',  first:'Susannah',    emp:'EMP0041' },
-];
+// Hourly ranks — only these staff have timesheets
+const HOURLY_RANKS = ['RN','EN','ENA','HCW',
+  'Registered Nurse','Enrolled Nurse',
+  'Enrolled Nursing Auxiliary','Healthcare Worker',
+  'Prof Nr','Prof RN','Prof Nurse'];
+
+// Employee list loaded from Firebase at runtime — never hardcoded
+let SIMPLEPAY_EMPLOYEES = [];
+
+async function loadHourlyEmployees() {
+  const { getDocs, collection, query, where } = await import(
+    'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js'
+  );
+  // Load all employees — filter to hourly ranks client-side
+  const snap = await getDocs(collection(db, 'employees'));
+  const all = snap.docs.map(d => d.data());
+
+  // Filter to hourly-paid ranks only
+  SIMPLEPAY_EMPLOYEES = all
+    .filter(e => {
+      const pos = (e.position || e.rank || '').trim();
+      return HOURLY_RANKS.some(r => pos.toLowerCase().includes(r.toLowerCase()));
+    })
+    .map(e => {
+      // Simplepay number = employeeNumber without EMP prefix
+      const empNo = e.employeeNumber || e.employeeId || '';
+      const simplepayNo = empNo.replace(/^EMP0*/,'').padStart(4,'0');
+      const fullName = (e.name || '').trim();
+      const nameParts = fullName.split(' ');
+      const last  = nameParts.slice(-1)[0] || '';
+      const first = nameParts.slice(0,-1).join(' ') || fullName;
+      return {
+        no:   simplepayNo,
+        last,
+        first,
+        emp:  empNo,
+        rank: e.position || e.rank || '',
+        full: fullName,
+      };
+    })
+    .sort((a,b) => a.last.localeCompare(b.last));
+
+  return SIMPLEPAY_EMPLOYEES;
+}
 
 // ── STATE ─────────────────────────────────────────────────────────────────
 let currentUser   = null;
@@ -362,6 +386,14 @@ onAuthStateChanged(auth, user => {
     document.getElementById('auth-screen').style.display = 'none';
     document.getElementById('app').style.display = 'block';
     document.getElementById('user-badge').textContent = user.displayName || user.email;
+    // Load hourly employees from Firebase — never from hardcoded data
+    try {
+      await loadHourlyEmployees();
+      console.log(`Loaded ${SIMPLEPAY_EMPLOYEES.length} hourly employees from Firebase`);
+    } catch(e) {
+      console.error('Failed to load employees:', e);
+      showToast('Could not load employee list from Firebase', 'error');
+    }
     initPeriods();
   } else if (user) {
     showAuthError('HR access only. Contact the COO.');
@@ -521,11 +553,14 @@ window.startProcessing = async function() {
 };
 
 async function extractFromFile(file) {
-  // Convert file to base64
   const base64 = await fileToBase64(file);
-  const mediaType = file.type || 'application/pdf';
 
-  // Build the AI prompt
+  // Determine media type — force pdf if filename ends in .pdf
+  let mediaType = file.type || '';
+  if (!mediaType || file.name.toLowerCase().endsWith('.pdf')) {
+    mediaType = 'application/pdf';
+  }
+
   const prompt = `You are reading a scanned HOSPITAL AT EKHAYA Staff Attendance Register (timesheet).
 
 Extract ALL timesheets visible in this document. Each timesheet has:
@@ -534,7 +569,7 @@ Extract ALL timesheets visible in this document. Each timesheet has:
 - A table of shifts with DATE, IN, OUT, TOTAL HRS columns
 - TOTAL HOURS and TOTAL AMOUNT at the bottom
 
-For each timesheet found, return a JSON object. Return ONLY a JSON array, no other text:
+Return ONLY a valid JSON array, no markdown, no explanation:
 
 [
   {
@@ -543,52 +578,63 @@ For each timesheet found, return a JSON object. Return ONLY a JSON array, no oth
     "month": "month/year as written",
     "totalHours": number,
     "totalAmount": number,
-    "hourlyRate": number or null,
-    "managerSigned": true or false,
-    "staffSigned": true or false,
-    "shifts": [
-      {"date": "as written", "in": "time", "out": "time", "hours": number}
-    ]
+    "managerSigned": true,
+    "shifts": [{"date": "as written", "in": "time", "out": "time", "hours": number}]
   }
 ]
 
-Important rules:
-- totalHours is the number written in the TOTAL HOURS box at the bottom
-- totalAmount is the number written in the TOTAL AMOUNT box (strip R prefix)
-- If you cannot read a value clearly, use null
-- Extract ALL timesheets on the page, not just the first one
-- managerSigned = true if there is a signature in the Manager Signature box`;
+Rules:
+- totalHours = number in TOTAL HOURS box
+- totalAmount = number in TOTAL AMOUNT box (strip R)
+- Extract ALL timesheets on ALL pages
+- If unreadable use null
+- Return [] if no timesheets found`;
+
+  const isPDF = mediaType === 'application/pdf';
+
+  const requestBody = {
+    model: 'claude-sonnet-4-6',
+    max_tokens: 4000,
+    messages: [{
+      role: 'user',
+      content: [
+        {
+          type: isPDF ? 'document' : 'image',
+          source: { type: 'base64', media_type: mediaType, data: base64 }
+        },
+        { type: 'text', text: prompt }
+      ]
+    }]
+  };
+
+  console.log('Sending to proxy:', file.name, mediaType, 'size:', base64.length);
 
   const response = await fetch('https://hae-motivation-proxy.shakabornman.workers.dev', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      model: 'claude-sonnet-4-6',
-      max_tokens: 2000,
-      messages: [{
-        role: 'user',
-        content: [
-          {
-            type: mediaType === 'application/pdf' ? 'document' : 'image',
-            source: {
-              type: 'base64',
-              media_type: mediaType,
-              data: base64
-            }
-          },
-          { type: 'text', text: prompt }
-        ]
-      }]
-    })
+    body: JSON.stringify(requestBody)
   });
 
+  if (!response.ok) {
+    const errText = await response.text();
+    console.error('Proxy error:', response.status, errText);
+    throw new Error(`Proxy returned ${response.status}: ${errText.substring(0, 100)}`);
+  }
+
   const data = await response.json();
-  if (data.error) throw new Error(data.error.message);
+  console.log('API response:', JSON.stringify(data).substring(0, 200));
+
+  if (data.error) throw new Error(data.error.message || JSON.stringify(data.error));
 
   const text = data.content?.[0]?.text || '[]';
-  // Strip markdown fences if present
   const clean = text.replace(/```json|```/g, '').trim();
-  return JSON.parse(clean);
+
+  try {
+    return JSON.parse(clean);
+  } catch(e) {
+    console.error('JSON parse failed. Raw response:', text);
+    throw new Error('Could not parse AI response: ' + text.substring(0, 100));
+  }
 }
 
 function fileToBase64(file) {
@@ -603,15 +649,17 @@ function fileToBase64(file) {
 // ── MATCH & BUILD VERIFY TABLE ────────────────────────────────────────────
 function matchEmployee(name) {
   if (!name) return null;
-  const n = name.toLowerCase().replace(/[^a-z\s]/g,'');
+  const n = name.toLowerCase().replace(/[^a-z\s]/g,'').trim();
   // Try last name match first
   for (const emp of SIMPLEPAY_EMPLOYEES) {
-    if (n.includes(emp.last.toLowerCase())) return emp;
+    if (emp.last && n.includes(emp.last.toLowerCase())) return emp;
   }
   // Try first name
   for (const emp of SIMPLEPAY_EMPLOYEES) {
-    if (n.includes(emp.first.toLowerCase())) return emp;
+    if (emp.first && n.includes(emp.first.toLowerCase())) return emp;
   }
+  // No match — flag it
+  console.warn(`No employee match found for: "${name}" — not in Firebase employee records`);
   return null;
 }
 
@@ -664,6 +712,18 @@ function buildVerifyTable() {
       late: false,  // flag if needed
     };
   });
+
+  // Find timesheets that could not be matched to any employee in Firebase
+  const unmatchedNames = extractedData
+    .filter(ts => !matchEmployee(ts.name))
+    .map(ts => ts.name);
+
+  if (unmatchedNames.length > 0) {
+    const warn = document.createElement('div');
+    warn.style.cssText = 'background:#fff7ed;border:1px solid #fed7aa;border-radius:8px;padding:12px 16px;margin-bottom:12px;font-size:13px;color:#c2410c';
+    warn.innerHTML = `<strong>⚠ ${unmatchedNames.length} timesheet${unmatchedNames.length>1?'s':''} not matched to any employee in Firebase:</strong><br>${unmatchedNames.map(n=>`&nbsp;· ${n}`).join('<br>')}.<br><small>Add these staff to the HR portal first, then re-process.</small>`;
+    document.getElementById('verify-table').parentNode.insertBefore(warn, document.getElementById('verify-table'));
+  }
 
   // Render
   const tbody = document.getElementById('verify-tbody');
