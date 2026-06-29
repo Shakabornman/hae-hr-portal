@@ -293,7 +293,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 
 <script type="module">
 import { initializeApp }   from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
-import { getFirestore, collection, getDocs, addDoc, doc, setDoc, Timestamp, query, where }
+import { getFirestore, collection, getDocs, query, where, getDocs, query, where, addDoc, doc, setDoc, Timestamp, query, where }
   from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 import { getAuth, signInWithPopup, GoogleAuthProvider,
          signInWithEmailAndPassword, signOut, onAuthStateChanged }
@@ -399,10 +399,33 @@ let uploadedFiles  = [];
 let extractedData  = [];   // [{name, rank, hours, amount, pages, late}]
 let verifyRows     = [];   // merged with SIMPLEPAY_EMPLOYEES
 
+
+// ── ACCESS CONTROL ─────────────────────────────────────────────────────────
+async function checkAccess(user) {
+  if (!user || !user.email) return false;
+  try {
+    const snap = await getDocs(query(
+      collection(db, 'employees'),
+      where('email', '==', user.email)
+    ));
+    return !snap.empty;
+  } catch(e) {
+    console.error('Access check failed:', e);
+    return false;
+  }
+}
+
 // ── AUTH ──────────────────────────────────────────────────────────────────
 onAuthStateChanged(auth, async user => {
   currentUser = user;
   if (user) {
+    const allowed = await checkAccess(user);
+    if (!allowed) {
+      await signOut(auth);
+      showAuthError('Access not authorised. Contact the COO.');
+      document.getElementById('auth-screen').style.display = 'flex';
+      return;
+    }
     document.getElementById('auth-screen').style.display = 'none';
     document.getElementById('app').style.display = 'block';
     document.getElementById('user-badge').textContent = user.displayName || user.email;
