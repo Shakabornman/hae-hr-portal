@@ -677,7 +677,7 @@ function matchEmployee(name) {
     if (words.some(w => similarEnough(w, first))) return emp;
   }
 
-  console.warn(\`No employee match found for: "\${name}" — not in Firebase employee records\`);
+  console.warn("No employee match found for: " + name + " — not in Firebase employee records");
   return null;
 }
 
