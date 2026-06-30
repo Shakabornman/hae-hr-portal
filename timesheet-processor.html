@@ -245,8 +245,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
                 <th>Hours (form)</th>
                 <th>Hours (edit)</th>
                 <th>Calculated</th>
-                <th>Form Amount</th>
                 <th>Status</th>
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody id="verify-tbody"></tbody>
@@ -679,12 +679,10 @@ function fileToBase64(file) {
 
 // ── MATCH & BUILD VERIFY TABLE ────────────────────────────────────────────
 function similarEnough(a, b) {
-  // Simple similarity — allow 1-2 character differences for handwriting variations
   a = a.toLowerCase().replace(/[^a-z]/g,'');
   b = b.toLowerCase().replace(/[^a-z]/g,'');
   if (a === b) return true;
   if (Math.abs(a.length - b.length) > 2) return false;
-  // Count differences
   let diff = 0;
   const len = Math.min(a.length, b.length);
   for (let i = 0; i < len; i++) if (a[i] !== b[i]) diff++;
@@ -694,182 +692,251 @@ function similarEnough(a, b) {
 
 function matchEmployee(name) {
   if (!name) return null;
-  // Extract words — ignore initials (single letters with dots)
-  const words = name.toLowerCase()
-    .replace(/[^a-z\s]/g,' ')
-    .split(/\s+/)
-    .filter(w => w.length > 1);  // ignore single-letter initials
-
-  // Try exact last name match first
+  const words = name.toLowerCase().replace(/[^a-z\s]/g,' ').split(/\s+/).filter(w => w.length > 1);
   for (const emp of SIMPLEPAY_EMPLOYEES) {
-    const last = emp.last.toLowerCase();
-    if (words.some(w => w === last)) return emp;
+    if (emp.last && words.some(w => w === emp.last.toLowerCase())) return emp;
   }
-
-  // Try fuzzy last name match (handwriting variations)
   for (const emp of SIMPLEPAY_EMPLOYEES) {
-    const last = emp.last.toLowerCase();
-    if (words.some(w => similarEnough(w, last))) return emp;
+    if (emp.last && words.some(w => similarEnough(w, emp.last.toLowerCase()))) return emp;
   }
-
-  // Try fuzzy first name match
   for (const emp of SIMPLEPAY_EMPLOYEES) {
-    const first = emp.first.toLowerCase();
-    if (words.some(w => similarEnough(w, first))) return emp;
+    if (emp.first && words.some(w => similarEnough(w, emp.first.toLowerCase()))) return emp;
   }
-
-  console.warn("No employee match found for: " + name + " — not in Firebase employee records");
   return null;
 }
 
 function getRateForRank(rank) {
   if (!rank) return null;
-  // The rank field may contain "ENA R58.80" or "ENA R258.80" from AI OCR reading
-  // the rate printed next to rank on the timesheet — always use our master rate table
-  // Take only the first word (the actual rank abbreviation or name)
-  const firstWord = rank.trim().split(/\s/)[0].toUpperCase();
-
-  // Exact match on first word
+  const firstWord = rank.trim().split(' ')[0].toUpperCase();
   for (const [key, rate] of Object.entries(RATES)) {
     if (firstWord === key.toUpperCase()) return rate;
   }
-
-  // Contains match for full rank names (e.g. "Enrolled Nurse Auxiliary")
   const r = rank.toUpperCase();
   for (const [key, rate] of Object.entries(RATES)) {
     if (key.length > 3 && r.includes(key.toUpperCase())) return rate;
   }
-
   return null;
 }
 
-// Get rate from Firebase employee record — always use this over AI-extracted rank
-function getRateForEmployee(emp) {
-  // Use the position stored in Firebase — authoritative
-  return getRateForRank(emp.rank);
-}
-
 function buildVerifyTable() {
-  // Build a map of extracted data by employee
-  const extracted = {};
+  // Build map of extracted data by matched employee
+  const matched = {};
+  const unmatched = [];
+
   for (const ts of extractedData) {
     const emp = matchEmployee(ts.name);
-    if (!emp) continue;
-    const existing = extracted[emp.no];
-    if (!existing || (ts.totalHours > (existing.totalHours || 0))) {
-      extracted[emp.no] = { ...ts, emp };
+    if (emp) {
+      // Keep highest hours if duplicate match
+      if (!matched[emp.no] || ts.totalHours > (matched[emp.no].ts.totalHours || 0)) {
+        matched[emp.no] = { ts, emp };
+      }
+    } else if (ts.name) {
+      unmatched.push(ts);
     }
   }
 
-  // Build verify rows — all Simplepay employees
+  // Build verify rows — all employees from Firebase
   verifyRows = SIMPLEPAY_EMPLOYEES.map(emp => {
-    const ts = extracted[emp.no];
-    // Always use Firebase employee rank for rate — never AI-extracted rank
+    const entry = matched[emp.no];
+    const ts = entry?.ts;
     const rate = getRateForRank(emp.rank);
-    const formHours  = ts?.totalHours || null;
-    const formAmount = ts?.totalAmount || null;
+    const formHours = ts?.totalHours || null;
     const calcAmount = rate && formHours ? Math.round(rate * formHours * 100) / 100 : null;
-    const mismatch   = formAmount && calcAmount
-      ? Math.abs(formAmount - calcAmount) > 1
-      : false;
 
     return {
-      empNo:      emp.no,
-      empKey:     emp.emp,
-      lastName:   emp.last,
-      firstName:  emp.first,
-      rank:       ts?.rank || '—',
-      rate:       rate,
+      empNo: emp.no,
+      empKey: emp.emp,
+      lastName: emp.last,
+      firstName: emp.first,
+      rank: emp.rank,
+      rate,
       formHours,
-      editHours:  formHours,   // user-editable
-      formAmount,
+      editHours: formHours,
       calcAmount,
-      mismatch,
-
       hasTimesheet: !!ts,
-      late: false,  // flag if needed
+      linkedEmpNo: emp.no,
     };
   });
 
-  // Find timesheets that could not be matched to any employee in Firebase
-  const unmatchedNames = extractedData
-    .filter(ts => !matchEmployee(ts.name))
-    .map(ts => ts.name);
+  // Render unmatched warning with link dropdowns
+  const container = document.getElementById('verify-table').parentNode;
+  const oldWarning = container.querySelector('.unmatched-warning');
+  if (oldWarning) oldWarning.remove();
 
-  if (unmatchedNames.length > 0) {
+  if (unmatched.length > 0) {
+    const empOptions = SIMPLEPAY_EMPLOYEES.map(e =>
+      `<option value="${e.no}">${e.lastName}, ${e.firstName} (${e.no})</option>`
+    ).join('');
+
     const warn = document.createElement('div');
-    warn.style.cssText = 'background:#fff7ed;border:1px solid #fed7aa;border-radius:8px;padding:12px 16px;margin-bottom:12px;font-size:13px;color:#c2410c';
-    warn.innerHTML = `<strong>⚠ ${unmatchedNames.length} timesheet${unmatchedNames.length>1?'s':''} not matched to any employee in Firebase:</strong><br>${unmatchedNames.map(n=>`&nbsp;· ${n}`).join('<br>')}.<br><small>Add these staff to the HR portal first, then re-process.</small>`;
-    document.getElementById('verify-table').parentNode.insertBefore(warn, document.getElementById('verify-table'));
+    warn.className = 'unmatched-warning';
+    warn.style.cssText = 'background:#fff7ed;border:1px solid #fed7aa;border-radius:8px;padding:14px 16px;margin-bottom:12px;font-size:13px;color:#c2410c';
+    warn.innerHTML = `<strong>⚠ ${unmatched.length} timesheet${unmatched.length>1?'s':''} could not be matched — link manually:</strong>
+      <table style="width:100%;margin-top:10px;border-collapse:collapse">
+        <tr style="font-size:11px;font-weight:700;color:#92400e;text-transform:uppercase;letter-spacing:0.05em">
+          <th style="padding:4px 8px;text-align:left">Name on timesheet</th>
+          <th style="padding:4px 8px;text-align:left">Hours</th>
+          <th style="padding:4px 8px;text-align:left">Link to employee</th>
+          <th style="padding:4px 8px"></th>
+        </tr>
+        ${unmatched.map((ts, i) => `
+        <tr id="unmatched-row-${i}">
+          <td style="padding:6px 8px;font-weight:600">${ts.name}</td>
+          <td style="padding:6px 8px;font-family:monospace">${ts.totalHours || '?'}</td>
+          <td style="padding:6px 8px">
+            <select id="unmatched-emp-${i}" style="font-size:12px;padding:4px 8px;border:1px solid #fed7aa;border-radius:4px;background:white;width:100%">
+              <option value="">— select employee —</option>
+              ${empOptions}
+            </select>
+          </td>
+          <td style="padding:6px 8px">
+            <button onclick="linkUnmatched(${i}, ${JSON.stringify(ts.totalHours)}, ${JSON.stringify(ts.rank)})" 
+              style="font-size:12px;padding:4px 12px;background:#c2410c;color:white;border:none;border-radius:4px;cursor:pointer">
+              Link
+            </button>
+          </td>
+        </tr>`).join('')}
+      </table>`;
+    container.insertBefore(warn, document.getElementById('verify-table'));
   }
 
-  // Render
+  renderVerifyTable();
+  updateSummary();
+}
+
+function updateSummary() {
+  const withHours = verifyRows.filter(r => r.editHours > 0).length;
+  const totalHrs  = verifyRows.reduce((a, r) => a + (r.editHours || 0), 0);
+  const noMatch   = verifyRows.filter(r => !r.editHours).length;
+
+  document.getElementById('summary-banner').innerHTML =
+    '<div class="summary-stat"><div class="sv">' + withHours + '</div><div class="sl">Timesheets</div></div>' +
+    '<div class="summary-stat"><div class="sv">' + totalHrs + '</div><div class="sl">Total Hours</div></div>' +
+    '<div class="summary-stat"><div class="sv" style="color:' + (noMatch?'var(--amber)':'var(--green)') + '">' + noMatch + '</div><div class="sl">No Timesheet</div></div>' +
+    '<div class="summary-stat"><div class="sv" style="color:var(--green)">✓</div><div class="sl">Ready</div></div>';
+
+  const el = document.getElementById('verify-flags');
+  if (el) el.textContent = noMatch > 0
+    ? noMatch + ' employees have no timesheet — enter hours manually or link above'
+    : '✓ All timesheets accounted for';
+}
+
+window.linkUnmatched = function(idx, hours, rank) {
+  const select = document.getElementById(`unmatched-emp-${idx}`);
+  const empNo = select.value;
+  if (!empNo) { showToast('Select an employee first', 'error'); return; }
+
+  // Find the row in verifyRows and update it
+  const rowIdx = verifyRows.findIndex(r => r.empNo === empNo);
+  if (rowIdx >= 0) {
+    verifyRows[rowIdx].formHours = hours;
+    verifyRows[rowIdx].editHours = hours;
+    verifyRows[rowIdx].hasTimesheet = true;
+    const rate = verifyRows[rowIdx].rate;
+    verifyRows[rowIdx].calcAmount = rate && hours ? Math.round(rate * hours * 100) / 100 : null;
+  }
+
+  // Remove the unmatched row
+  const row = document.getElementById(`unmatched-row-${idx}`);
+  if (row) row.style.display = 'none';
+
+  renderVerifyTable();
+  updateSummary();
+  showToast('Timesheet linked', 'success');
+};
+
+window.delinkRow = function(idx) {
+  verifyRows[idx].formHours = null;
+  verifyRows[idx].editHours = null;
+  verifyRows[idx].hasTimesheet = false;
+  verifyRows[idx].calcAmount = null;
+  renderVerifyTable();
+  updateSummary();
+  showToast('Timesheet unlinked', 'success');
+};
+
+window.relinkRow = function(idx) {
+  const select = document.getElementById(`relink-${idx}`);
+  if (!select) return;
+  const newEmpNo = select.value;
+  if (!newEmpNo || newEmpNo === verifyRows[idx].empNo) return;
+
+  // Move hours to new employee
+  const newRowIdx = verifyRows.findIndex(r => r.empNo === newEmpNo);
+  if (newRowIdx >= 0) {
+    verifyRows[newRowIdx].formHours  = verifyRows[idx].formHours;
+    verifyRows[newRowIdx].editHours  = verifyRows[idx].editHours;
+    verifyRows[newRowIdx].hasTimesheet = true;
+    const rate = verifyRows[newRowIdx].rate;
+    verifyRows[newRowIdx].calcAmount = rate && verifyRows[idx].editHours
+      ? Math.round(rate * verifyRows[idx].editHours * 100) / 100 : null;
+  }
+
+  // Clear original row
+  verifyRows[idx].formHours = null;
+  verifyRows[idx].editHours = null;
+  verifyRows[idx].hasTimesheet = false;
+  verifyRows[idx].calcAmount = null;
+
+  renderVerifyTable();
+  updateSummary();
+  showToast('Timesheet re-linked', 'success');
+};
+
+function renderVerifyTable() {
+  const empOptions = SIMPLEPAY_EMPLOYEES.map(e =>
+    `<option value="${e.no}">${e.lastName}, ${e.firstName}</option>`
+  ).join('');
+
   const tbody = document.getElementById('verify-tbody');
   tbody.innerHTML = verifyRows.map((r, idx) => {
-    const statusBadge = !r.hasTimesheet
-      ? '<span class="flag-badge flag-none">No timesheet</span>'
-      : r.mismatch
-        ? '<span class="flag-badge flag-mismatch">⚠ Amount mismatch</span>'
-        : '<span class="flag-badge flag-ok">✓ OK</span>';
+    const hasHours = r.hasTimesheet || (r.editHours > 0);
+    const rowClass = !hasHours ? 'no-ts' : '';
 
-    const rowClass = !r.hasTimesheet ? 'no-ts' : r.mismatch ? 'flag-row' : '';
+    const statusCell = !hasHours
+      ? '<span class="flag-badge flag-none">No timesheet</span>'
+      : '<span class="flag-badge flag-ok">✓</span>';
+
+    const actionCell = hasHours
+      ? `<div style="display:flex;gap:4px;align-items:center;flex-wrap:wrap">
+          <select id="relink-${idx}" style="font-size:11px;padding:3px 6px;border:1px solid var(--rule);border-radius:4px;max-width:130px">
+            <option value="">Re-link to…</option>${empOptions}
+          </select>
+          <button onclick="relinkRow(${idx})" style="font-size:11px;padding:3px 8px;background:var(--amber-b);color:var(--amber);border:1px solid var(--amber);border-radius:4px;cursor:pointer">Move</button>
+          <button onclick="delinkRow(${idx})" style="font-size:11px;padding:3px 8px;background:var(--red-b);color:var(--red);border:1px solid var(--red);border-radius:4px;cursor:pointer">Remove</button>
+        </div>`
+      : '';
 
     return `<tr class="${rowClass}">
-      <td style="font-family:monospace">${r.empNo}</td>
-      <td style="font-weight:500">${r.lastName}, ${r.firstName}</td>
-      <td style="font-size:12px;color:var(--mid)">${r.rank}</td>
-      <td style="font-family:monospace">R${r.rate ? r.rate.toFixed(2) : '—'}</td>
+      <td style="font-family:monospace;font-size:12px">${r.empNo}</td>
+      <td style="font-weight:${hasHours?'600':'400'};color:${hasHours?'var(--ink)':'var(--mid)'}">${r.lastName}, ${r.firstName}</td>
+      <td style="font-size:12px;color:var(--mid)">${r.rank||'—'}</td>
+      <td style="font-family:monospace">${r.rate ? 'R'+r.rate.toFixed(2) : '—'}</td>
       <td style="text-align:center;font-family:monospace">${r.formHours ?? '—'}</td>
       <td><input class="hours-input" type="number" min="0" step="0.5"
         value="${r.editHours ?? ''}" placeholder="0"
-        ${!r.hasTimesheet ? 'style="background:var(--paper)"' : ''}
         onchange="updateHours(${idx}, this.value)"
         oninput="updateHours(${idx}, this.value)"></td>
       <td style="font-family:monospace" id="calc-${idx}">
-        ${r.calcAmount ? 'R' + r.calcAmount.toFixed(2) : '—'}
+        ${r.calcAmount ? 'R'+r.calcAmount.toFixed(2) : '—'}
       </td>
-      <td style="font-family:monospace" id="form-amt-${idx}">
-        ${r.formAmount ? 'R' + r.formAmount.toFixed(2) : '—'}
-      </td>
-      <td id="status-badge-${idx}">${statusBadge}</td>
+      <td style="font-size:12px" id="status-badge-${idx}">${statusCell}</td>
+      <td>${actionCell}</td>
     </tr>`;
   }).join('');
-
-  updateSummary();
 }
 
 window.updateHours = function(idx, val) {
   const row = verifyRows[idx];
   const hours = parseFloat(val) || 0;
   row.editHours = hours;
-
+  row.hasTimesheet = hours > 0;
   const calc = row.rate ? Math.round(row.rate * hours * 100) / 100 : null;
   row.calcAmount = calc;
-
-  document.getElementById(`calc-${idx}`).textContent = calc ? 'R' + calc.toFixed(2) : '—';
-
-  const input = document.querySelectorAll('.hours-input')[idx];
-  input.className = 'hours-input' + (val !== String(row.formHours) ? ' changed' : '');
-
+  const calcEl = document.getElementById('calc-' + idx);
+  if (calcEl) calcEl.textContent = calc ? 'R' + calc.toFixed(2) : '—';
   updateSummary();
 };
-
-function updateSummary() {
-  const withTS   = verifyRows.filter(r => r.hasTimesheet || r.editHours > 0);
-  const flags    = verifyRows.filter(r => r.mismatch);
-  const totalHrs = verifyRows.reduce((a, r) => a + (r.editHours || 0), 0);
-
-  document.getElementById('summary-banner').innerHTML = `
-    <div class="summary-stat"><div class="sv">${withTS.length}</div><div class="sl">Timesheets</div></div>
-    <div class="summary-stat"><div class="sv">${totalHrs}</div><div class="sl">Total Hours</div></div>
-    <div class="summary-stat"><div class="sv" style="color:${flags.length?'var(--amber)':'var(--green)'}">${flags.length}</div><div class="sl">Mismatches</div></div>
-    <div class="summary-stat"><div class="sv" style="color:var(--green)">✓</div><div class="sl">Ready</div></div>`;
-
-  const flagText = flags.length
-    ? `⚠ ${flags.length} amount mismatch${flags.length>1?'es':''} — review before exporting`
-    : '✓ All checks passed';
-  document.getElementById('verify-flags').textContent = flagText;
-}
 
 // ── EXPORT ────────────────────────────────────────────────────────────────
 function buildExportData() {
