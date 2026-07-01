@@ -228,6 +228,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <div class="card">
         <div class="card-title">Verify & Correct</div>
 
+        <div id="processing-summary" style="display:none;background:var(--paper);border:1px solid var(--rule);border-radius:8px;padding:12px 16px;margin-bottom:12px;font-size:13px;color:var(--ink)"></div>
+
         <div class="summary-banner green" id="summary-banner"></div>
 
         <p style="font-size:12px;color:var(--mid);margin-bottom:12px">
@@ -353,8 +355,8 @@ async function loadHourlyEmployees() {
       const simplepayNo = numPart.padStart(4,'0');
 
       // Name — Firebase stores firstName, lastName, and fullName separately
-      const firstName = (e.firstName || '').trim();
-      const lastName  = (e.lastName  || e.surname || '').trim();
+      const firstName = (e.first || '').trim();
+      const lastName  = (e.last  || e.surname || '').trim();
 
       // fullName may be "Last, First" or "First Last" — handle both
       let full = (e.fullName || e.name || '').trim();
@@ -383,7 +385,13 @@ async function loadHourlyEmployees() {
         full:  full,
       };
     })
-    .filter(e => e.full)  // must have a name
+    .filter(e => {
+      if (!e.full) return false;
+      const pos = (e.rank || '').toLowerCase();
+      return ['registered nurse','enrolled nurse','nurse auxiliary',
+              'hcw','healthcare worker','health care worker',
+              'prof nr','prof nurse'].some(k => pos.includes(k));
+    })
     .sort((a,b) => a.last.localeCompare(b.last));
 
   console.log('Loaded employees:', SIMPLEPAY_EMPLOYEES.length,
@@ -547,9 +555,14 @@ document.addEventListener('DOMContentLoaded', () => {
 // ── STEP NAVIGATION — defined below after export functions ───────────────
 
 // ── AI PROCESSING ─────────────────────────────────────────────────────────
+// Track processing results
+let processingSummary = { uploaded: 0, read: 0, skipped: [], errors: [] };
+
 window.startProcessing = async function() {
   goStep(3);
   extractedData = [];
+  processingSummary = { uploaded: uploadedFiles.length, read: 0, skipped: [], errors: [] };
+
   const procList = document.getElementById('proc-list');
   procList.innerHTML = uploadedFiles.map((f, i) =>
     `<li class="proc-item" id="proc-${i}">
@@ -568,14 +581,24 @@ window.startProcessing = async function() {
 
     try {
       const results = await extractFromFile(file);
-      extractedData.push(...results);
-      statusEl.className = 'proc-status done';
-      statusEl.textContent = '✓';
-      labelEl.textContent  = `${file.name} — found ${results.length} timesheet${results.length !== 1 ? 's' : ''}`;
+      if (results.length === 0) {
+        processingSummary.skipped.push(file.name);
+        statusEl.className = 'proc-status error';
+        statusEl.textContent = '!';
+        labelEl.textContent  = `${file.name} — no timesheet found`;
+      } else {
+        extractedData.push(...results);
+        processingSummary.read += results.length;
+        statusEl.className = 'proc-status done';
+        statusEl.textContent = '✓';
+        labelEl.textContent  = `${file.name} — ${results.length} timesheet${results.length !== 1 ? 's' : ''} read`;
+      }
     } catch(e) {
+      processingSummary.errors.push(file.name);
+      processingSummary.skipped.push(file.name);
       statusEl.className = 'proc-status error';
       statusEl.textContent = '✗';
-      labelEl.textContent  = `${file.name} — error: ${e.message}`;
+      labelEl.textContent  = `${file.name} — failed: ${e.message}`;
     }
   }
 
@@ -719,6 +742,26 @@ function getRateForRank(rank) {
 }
 
 function buildVerifyTable() {
+  // Show processing summary at top of verify step
+  const summaryEl = document.getElementById('processing-summary');
+  if (summaryEl) {
+    const skippedHtml = processingSummary.skipped.length > 0
+      ? `<div style="margin-top:8px;font-size:12px;color:var(--red)">
+          <strong>Not read:</strong> ${processingSummary.skipped.join(', ')}
+          — re-upload these or enter hours manually below
+        </div>` : '';
+
+    summaryEl.innerHTML =
+      `<div style="display:flex;gap:20px;flex-wrap:wrap;align-items:center">
+        <span>📁 <strong>${processingSummary.uploaded}</strong> files uploaded</span>
+        <span>✅ <strong>${processingSummary.read}</strong> timesheets read</span>
+        ${processingSummary.skipped.length > 0
+          ? `<span style="color:var(--red)">⚠ <strong>${processingSummary.skipped.length}</strong> not read</span>`
+          : '<span style="color:var(--green)">✓ All files read</span>'}
+      </div>${skippedHtml}`;
+    summaryEl.style.display = 'block';
+  }
+
   // Build map of extracted data by matched employee
   const matched = {};
   const unmatched = [];
@@ -746,8 +789,8 @@ function buildVerifyTable() {
     return {
       empNo: emp.no,
       empKey: emp.emp,
-      lastName: emp.last,
-      firstName: emp.first,
+      lastName: emp.last || "",
+      firstName: emp.first || "",
       rank: emp.rank,
       rate,
       formHours,
@@ -765,7 +808,7 @@ function buildVerifyTable() {
 
   if (unmatched.length > 0) {
     const empOptions = SIMPLEPAY_EMPLOYEES.map(e =>
-      `<option value="${e.no}">${e.lastName}, ${e.firstName} (${e.no})</option>`
+      `<option value="${e.no}">${e.last}, ${e.first} (${e.no})</option>`
     ).join('');
 
     const warn = document.createElement('div');
@@ -885,7 +928,7 @@ window.relinkRow = function(idx) {
 
 function renderVerifyTable() {
   const empOptions = SIMPLEPAY_EMPLOYEES.map(e =>
-    `<option value="${e.no}">${e.lastName}, ${e.firstName}</option>`
+    `<option value="${e.last ? e.no : e.no}">${e.last || "?"}, ${e.first || "?"}</option>`
   ).join('');
 
   const tbody = document.getElementById('verify-tbody');
@@ -909,7 +952,7 @@ function renderVerifyTable() {
 
     return `<tr class="${rowClass}">
       <td style="font-family:monospace;font-size:12px">${r.empNo}</td>
-      <td style="font-weight:${hasHours?'600':'400'};color:${hasHours?'var(--ink)':'var(--mid)'}">${r.lastName}, ${r.firstName}</td>
+      <td style="font-weight:${hasHours?'600':'400'};color:${hasHours?'var(--ink)':'var(--mid)'}">${r.last}, ${r.first}</td>
       <td style="font-size:12px;color:var(--mid)">${r.rank||'—'}</td>
       <td style="font-family:monospace">${r.rate ? 'R'+r.rate.toFixed(2) : '—'}</td>
       <td style="text-align:center;font-family:monospace">${r.formHours ?? '—'}</td>
@@ -950,7 +993,7 @@ function buildExportData() {
 
   for (const r of verifyRows) {
     const hours = r.editHours || '';
-    lines.push(`${r.empNo}\t${r.lastName}\t${r.firstName}\t${hours}`);
+    lines.push(`${r.empNo}\t${r.last}\t${r.first}\t${hours}`);
   }
 
   return lines.join('\n');
@@ -1004,8 +1047,8 @@ window.saveToFirebase = async function() {
           payDate:        selectedPeriod?.payDate,
           empNo:          r.empNo,
           empKey:         r.empKey,
-          lastName:       r.lastName,
-          firstName:      r.firstName,
+          lastName:       r.last,
+          firstName:      r.first,
           rank:           r.rank,
           hourlyRate:     r.rate,
           hoursForm:      r.formHours,
