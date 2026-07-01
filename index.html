@@ -35,7 +35,6 @@
     min-height: 100vh;
   }
 
-  /* ── LOGIN SCREEN ── */
   #login-screen {
     min-height: 100vh;
     display: flex;
@@ -147,10 +146,8 @@
 
   .login-error { color: var(--red); font-size: 12px; margin-top: 10px; display: none; }
 
-  /* ── APP SHELL ── */
   #app { display: none; min-height: 100vh; }
 
-  /* HEADER */
   .app-header {
     background: var(--navy);
     padding: 0 24px;
@@ -205,7 +202,6 @@
   }
   .btn-signout:hover { color: var(--white); border-color: #6B7280; }
 
-  /* TAB NAV */
   .tab-nav {
     background: var(--white);
     border-bottom: 1px solid var(--rule);
@@ -231,18 +227,15 @@
   .tab-btn:hover { color: var(--ink); }
   .tab-btn.active { color: var(--navy); border-bottom-color: var(--navy); }
 
-  /* MAIN CONTENT */
   .app-main {
     max-width: 900px;
     margin: 0 auto;
     padding: 32px 24px 60px;
   }
 
-  /* PANELS */
   .panel { display: none; }
   .panel.active { display: block; }
 
-  /* SEARCH */
   .search-wrap {
     position: relative;
     margin-bottom: 24px;
@@ -271,7 +264,6 @@
     pointer-events: none;
   }
 
-  /* EMPLOYEE LIST */
   .emp-list { display: flex; flex-direction: column; gap: 8px; }
 
   .emp-row {
@@ -331,7 +323,6 @@
     white-space: nowrap;
   }
 
-  /* EDIT PANEL */
   .edit-header {
     display: flex;
     align-items: flex-start;
@@ -368,7 +359,6 @@
 
   .edit-emp-meta { font-size: 13px; color: var(--mid); }
 
-  /* SECTION CARDS */
   .section-card {
     background: var(--white);
     border: 1px solid var(--rule);
@@ -404,7 +394,6 @@
 
   .form-grid .full { grid-column: 1 / -1; }
 
-  /* READONLY FIELDS */
   .readonly-field {
     background: var(--paper);
     border-color: var(--rule) !important;
@@ -412,7 +401,6 @@
     cursor: not-allowed;
   }
 
-  /* SAVE BAR */
   .save-bar {
     position: fixed;
     bottom: 0;
@@ -465,7 +453,6 @@
   .btn-save:hover { background: #133a28; }
   .btn-save:disabled { background: var(--mid); cursor: not-allowed; }
 
-  /* TOAST */
   .toast {
     position: fixed;
     bottom: 80px;
@@ -488,7 +475,6 @@
   .toast.success { background: var(--teal); }
   .toast.error   { background: var(--red); }
 
-  /* LOADING */
   .loading {
     text-align: center;
     padding: 48px;
@@ -507,7 +493,6 @@
 
   @keyframes spin { to { transform: rotate(360deg); } }
 
-  /* EMPTY STATE */
   .empty {
     text-align: center;
     padding: 48px 24px;
@@ -518,7 +503,6 @@
   .empty h3 { font-size: 15px; font-weight: 600; color: var(--ink); margin-bottom: 4px; }
   .empty p { font-size: 13px; }
 
-  /* NEW EMPLOYEE */
   .page-title {
     font-family: 'Space Grotesk', sans-serif;
     font-size: 20px;
@@ -534,7 +518,6 @@
     .save-bar { padding: 12px 16px; }
   }
 
-  /* ── DOCUMENT UPLOAD ── */
   .upload-btn-main {
     display: inline-flex; align-items: center; gap: 8px;
     padding: 9px 18px; background: var(--navy); color: var(--white);
@@ -563,7 +546,6 @@
   .doc-btn-view { background: var(--light-navy); color: var(--navy); border-color: var(--navy); }
   .doc-btn-del  { background: var(--light-red);  color: var(--red);  border-color: var(--red);  }
 
-  /* Upload modal */
   .modal-overlay { position: fixed; inset: 0; background: rgba(20,30,45,0.55);
     display: none; align-items: center; justify-content: center; z-index: 300; padding: 24px; }
   .modal-overlay.show { display: flex; }
@@ -606,7 +588,6 @@
 </head>
 <body>
 
-<!-- ═══════════════ LOGIN SCREEN ═══════════════ -->
 <div id="login-screen">
   <div class="login-card">
     <div class="login-logo">Hospital at Ekhaya</div>
@@ -636,7 +617,6 @@
   </div>
 </div>
 
-<!-- ═══════════════ APP SHELL ═══════════════ -->
 <div id="app">
   <header class="app-header">
     <div class="app-header-left">
@@ -655,7 +635,6 @@
 
   <main class="app-main">
 
-    <!-- SEARCH PANEL -->
     <div class="panel active" id="panel-search">
       <button class="upload-btn-main" onclick="openUploadModal(null)">
         📎 Upload Document
@@ -669,7 +648,6 @@
       </div>
     </div>
 
-    <!-- EDIT PANEL -->
     <div class="panel" id="panel-edit">
       <div class="edit-header">
         <button class="btn-back" onclick="backToList()">
@@ -690,7 +668,8 @@
       <div id="edit-form-body"></div>
 
       <div id="documents-panel" style="display:none">
-        <button class="upload-btn-main" onclick="openUploadModal(currentDocId)">
+        <!-- FIX: use wrapper function so currentDocId is accessible from module scope -->
+        <button class="upload-btn-main" onclick="openUploadModalForCurrentEmployee()">
           📎 Upload Document
         </button>
         <div id="doc-list-container">
@@ -709,7 +688,6 @@
       </div>
     </div>
 
-    <!-- NEW EMPLOYEE PANEL -->
     <div class="panel" id="panel-new">
       <div class="page-title">Add New Employee</div>
       <div id="new-form-body"></div>
@@ -728,7 +706,6 @@
 
 <div class="toast" id="toast"></div>
 
-<!-- UPLOAD MODAL -->
 <div class="modal-overlay" id="upload-modal">
   <div class="modal-card">
     <div class="modal-head">
@@ -737,7 +714,6 @@
     </div>
     <div class="modal-body">
 
-      <!-- Step 1: Drop zone -->
       <div id="upload-step-1">
         <div class="upload-drop" id="upload-drop">
           <input type="file" id="upload-file-input" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
@@ -748,7 +724,6 @@
         </div>
       </div>
 
-      <!-- Step 2: AI reading -->
       <div id="upload-step-2" style="display:none">
         <div style="text-align:center;padding:24px">
           <div class="spinner" style="margin:0 auto 12px"></div>
@@ -756,7 +731,6 @@
         </div>
       </div>
 
-      <!-- Step 3: Confirm -->
       <div id="upload-step-3" style="display:none">
         <div class="ai-suggestion" id="ai-suggestion-box">
           <div class="ai-label">AI Suggestion</div>
@@ -797,7 +771,6 @@
   </div>
 </div>
 
-<!-- Firebase SDK -->
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getAuth, signInWithPopup, GoogleAuthProvider, signInWithEmailAndPassword, signOut as fbSignOut, onAuthStateChanged }
@@ -807,7 +780,6 @@ import { getStorage, ref, uploadBytesResumable, getDownloadURL, listAll, deleteO
 import { getFirestore, collection, getDocs, query, where, doc, updateDoc, setDoc, serverTimestamp }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-// ── YOUR FIREBASE CONFIG ──────────────────────────────────────────────────
 const firebaseConfig = {
   apiKey:            "AIzaSyBla6UBluNcWVKPSU8U30IuTSubLb7R2Kc",
   authDomain:        "hae-vuma-92fca.firebaseapp.com",
@@ -823,7 +795,6 @@ const db       = getFirestore(app);
 const storage  = getStorage(app);
 const provider = new GoogleAuthProvider();
 
-// ── DOCUMENT TYPES ────────────────────────────────────────────────────────
 const DOC_TYPES = [
   'ID Document',
   'CV / Resume',
@@ -836,13 +807,13 @@ const DOC_TYPES = [
   'Other'
 ];
 
-// ── STATE ─────────────────────────────────────────────────────────────────
 let allEmployees  = [];
 let currentDocId  = null;
 let currentEmpDoc = null;
 
+// ── FIX: wrapper so inline onclick can reach currentDocId inside module scope ──
+window.openUploadModalForCurrentEmployee = () => openUploadModal(currentDocId);
 
-// ── ACCESS CONTROL ─────────────────────────────────────────────────────────
 async function checkAccess(user) {
   if (!user || !user.email) return false;
   try {
@@ -857,7 +828,6 @@ async function checkAccess(user) {
   }
 }
 
-// ── AUTH ──────────────────────────────────────────────────────────────────
 window.signInGoogle = async () => {
   try {
     await signInWithPopup(auth, provider);
@@ -908,8 +878,6 @@ onAuthStateChanged(auth, async (user) => {
   }
 });
 
-// ── LOAD EMPLOYEES ────────────────────────────────────────────────────────
-// Track document counts per employee
 let docCountMap = {};
 
 async function loadDocCounts() {
@@ -938,7 +906,6 @@ async function loadEmployees() {
   }
 }
 
-// ── RENDER LIST ───────────────────────────────────────────────────────────
 function renderList(employees) {
   const container = document.getElementById('emp-list-container');
   if (!employees.length) {
@@ -983,7 +950,6 @@ function renderList(employees) {
   container.innerHTML = html;
 }
 
-// ── FILTER ────────────────────────────────────────────────────────────────
 window.filterEmployees = () => {
   const q = document.getElementById('search-input').value.toLowerCase();
   if (!q) { renderList(allEmployees); return; }
@@ -996,7 +962,6 @@ window.filterEmployees = () => {
   renderList(filtered);
 };
 
-// ── OPEN EMPLOYEE ─────────────────────────────────────────────────────────
 window.openEmployee = (docId) => {
   currentDocId  = docId;
   currentEmpDoc = allEmployees.find(e => e.id === docId) || {};
@@ -1014,7 +979,6 @@ window.openEmployee = (docId) => {
   window.scrollTo(0, 0);
 };
 
-// ── BUILD EDIT FORM ───────────────────────────────────────────────────────
 function buildEditForm(emp) {
   const ro = (val) => `<input class="readonly-field" value="${val || '—'}" readonly>`;
   const inp = (id, val, type='text') =>
@@ -1171,7 +1135,6 @@ function buildEditForm(emp) {
     </div>`;
 }
 
-// ── SAVE EMPLOYEE ─────────────────────────────────────────────────────────
 window.saveEmployee = async () => {
   const btn = document.getElementById('btn-save');
   btn.disabled = true;
@@ -1185,7 +1148,6 @@ window.saveEmployee = async () => {
     const bool = (id) => get(id) === 'Yes';
 
     const updates = {
-      // Identity
       fullName:           get('fullName'),
       lastName:           get('fullName').split(',')[0].trim(),
       firstName:          get('fullName').includes(',') ? get('fullName').split(',')[1].trim() : '',
@@ -1196,7 +1158,6 @@ window.saveEmployee = async () => {
       startDate:          get('startDate'),
       endDate:            get('endDate'),
       active:             get('active') === 'Active',
-      // HR fields
       gender:             get('gender'),
       equityGroup:        get('equityGroup'),
       department:         get('department'),
@@ -1209,14 +1170,12 @@ window.saveEmployee = async () => {
       backgroundCheckConsent: bool('backgroundCheckConsent'),
       consentDate:        get('consentDate'),
       hrOnboardingComplete: bool('hrOnboardingComplete'),
-      // Professional registration
       professionalRegistration: {
         body:               get('reg_body'),
         registrationNumber: get('reg_number'),
         category:           get('reg_category'),
         expiryDate:         get('reg_expiry'),
       },
-      // Banking
       paymentMethod:      get('paymentMethod'),
       incomeTaxNumber:    get('incomeTaxNumber'),
       banking: {
@@ -1227,7 +1186,6 @@ window.saveEmployee = async () => {
         holderRelationship: get('bank_holderRelationship'),
         holderName:         get('bank_holderName'),
       },
-      // Address
       residentialAddress: {
         streetNo: get('addr_streetNo'),
         street:   get('addr_street'),
@@ -1240,7 +1198,6 @@ window.saveEmployee = async () => {
       updatedBy: auth.currentUser?.email || 'unknown',
     };
 
-    // Recalculate missing fields
     const missing = [];
     if (!updates.gender)       missing.push('gender');
     if (!updates.equityGroup)  missing.push('equityGroup');
@@ -1256,7 +1213,6 @@ window.saveEmployee = async () => {
 
     await updateDoc(doc(db, 'employees', currentDocId), updates);
 
-    // Update local cache
     const idx = allEmployees.findIndex(e => e.id === currentDocId);
     if (idx >= 0) allEmployees[idx] = { ...allEmployees[idx], ...updates };
 
@@ -1271,7 +1227,6 @@ window.saveEmployee = async () => {
   }
 };
 
-// ── NEW EMPLOYEE FORM ─────────────────────────────────────────────────────
 function buildNewForm() {
   const inp = (id, type='text', placeholder='') =>
     `<input id="n_${id}" type="${type}" placeholder="${placeholder}">`;
@@ -1454,7 +1409,6 @@ window.saveNewEmployee = async () => {
   }
 };
 
-// ── NAVIGATION ────────────────────────────────────────────────────────────
 window.showTab = (tab) => {
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -1481,7 +1435,6 @@ window.backToList = () => {
   window.scrollTo(0,0);
 };
 
-// ── TOAST ─────────────────────────────────────────────────────────────────
 window.showToast = (msg, type = '') => {
   const t = document.getElementById('toast');
   t.textContent = msg;
@@ -1489,8 +1442,6 @@ window.showToast = (msg, type = '') => {
   setTimeout(() => { t.className = 'toast'; }, 3000);
 };
 
-
-// ── DOCUMENT TAB ──────────────────────────────────────────────────────────
 window.switchDocTab = function(tab, btn) {
   document.querySelectorAll('.doc-tab').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
@@ -1499,18 +1450,16 @@ window.switchDocTab = function(tab, btn) {
   if (tab === 'documents' && currentDocId) loadDocuments(currentDocId);
 };
 
-// ── LOAD DOCUMENTS FOR EMPLOYEE ───────────────────────────────────────────
 async function loadDocuments(empDocId) {
   const container = document.getElementById('doc-list-container');
   container.innerHTML = '<div class="loading"><div class="spinner"></div>Loading…</div>';
   try {
-    const { collection: col, query: q, where: w, getDocs: gd, orderBy } =
+    const { collection: col, query: q, where: w, getDocs: gd } =
       await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
     const snap = await gd(q(col(db, 'hr_documents'), w('employeeDocId', '==', empDocId)));
     const docs = snap.docs.map(d => ({ id: d.id, ...d.data() }))
       .sort((a, b) => (b.uploadedAt || '').localeCompare(a.uploadedAt || ''));
 
-    // Update badge
     document.getElementById('doc-count-badge').textContent = docs.length;
 
     if (!docs.length) {
@@ -1559,7 +1508,6 @@ window.deleteDoc = async (docId, storagePath) => {
   }
 };
 
-// ── UPLOAD MODAL ──────────────────────────────────────────────────────────
 let uploadFile    = null;
 let uploadEmpId   = null;
 let aiSuggestion  = null;
@@ -1569,17 +1517,14 @@ window.openUploadModal = function(empDocId) {
   aiSuggestion = null;
   uploadEmpId  = empDocId;
 
-  // Populate employee dropdown
   const empSel = document.getElementById('upload-emp-select');
   empSel.innerHTML = '<option value="">— select employee —</option>' +
     allEmployees.map(e => `<option value="${e.id}" ${e.id === empDocId ? 'selected' : ''}>${e.fullName} (${e.employeeNumber || '?'})</option>`).join('');
 
-  // Populate doc type dropdown
   const typeSel = document.getElementById('upload-type-select');
   typeSel.innerHTML = '<option value="">— select type —</option>' +
     DOC_TYPES.map(t => `<option>${t}</option>`).join('');
 
-  // Reset steps
   document.getElementById('upload-step-1').style.display = 'block';
   document.getElementById('upload-step-2').style.display = 'none';
   document.getElementById('upload-step-3').style.display = 'none';
@@ -1606,18 +1551,14 @@ window.handleUploadFile = async function(file) {
     const result = await readDocumentWithAI(file);
     aiSuggestion = result;
 
-    // Show AI suggestion
-    const suggBox = document.getElementById('ai-suggestion-box');
     document.getElementById('ai-suggestion-text').textContent =
       `Employee: ${result.name || 'Unknown'} · Document type: ${result.documentType || 'Unknown'}`;
     document.getElementById('ai-confidence-text').textContent =
       `Confidence: ${result.confidence || 'Medium'} — please verify before saving`;
 
-    // Pre-select employee if matched
     if (result.matchedEmpId) {
       document.getElementById('upload-emp-select').value = result.matchedEmpId;
     }
-    // Pre-select doc type
     if (result.documentType) {
       const sel = document.getElementById('upload-type-select');
       for (let o of sel.options) {
@@ -1628,7 +1569,6 @@ window.handleUploadFile = async function(file) {
       }
     }
   } catch(e) {
-    // AI failed — still allow manual selection
     document.getElementById('ai-suggestion-box').style.display = 'none';
     console.warn('AI read failed:', e.message);
   }
@@ -1685,7 +1625,6 @@ Return ONLY valid JSON, no other text:
   const text = (data.content?.[0]?.text || '{}').replace(/```json|```/g,'').trim();
   const result = JSON.parse(text);
 
-  // Try to match name to employee
   if (result.name) {
     const nameLower = result.name.toLowerCase();
     const matched = allEmployees.find(e =>
@@ -1707,7 +1646,6 @@ function fileToBase64(file) {
   });
 }
 
-// ── CONFIRM UPLOAD ─────────────────────────────────────────────────────────
 window.confirmUpload = async function() {
   const empId   = document.getElementById('upload-emp-select').value;
   const docType = document.getElementById('upload-type-select').value;
@@ -1727,7 +1665,6 @@ window.confirmUpload = async function() {
     const safeName = uploadFile.name.replace(/[^a-zA-Z0-9._-]/g, '_');
     const storagePath = `hr-documents/${empNo}/${docType.replace(/[^a-zA-Z0-9]/g,'_')}/${Date.now()}_${safeName}`;
 
-    // Upload to Firebase Storage
     const { ref: r, uploadBytesResumable: ubr, getDownloadURL: gdl } =
       await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js');
 
@@ -1750,7 +1687,6 @@ window.confirmUpload = async function() {
 
     const downloadUrl = await gdl(storageRef);
 
-    // Save Firestore record
     const { collection: col, addDoc: ad } =
       await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
 
@@ -1771,7 +1707,6 @@ window.confirmUpload = async function() {
     showToast('Document saved', 'success');
     closeUploadModal();
 
-    // Refresh doc list if in documents tab
     if (currentDocId === empId) loadDocuments(empId);
 
   } catch(e) {
@@ -1782,7 +1717,6 @@ window.confirmUpload = async function() {
   }
 };
 
-// Drag and drop for upload zone
 document.addEventListener('DOMContentLoaded', () => {
   const zone = document.getElementById('upload-drop');
   if (!zone) return;
