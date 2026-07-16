@@ -7,140 +7,141 @@
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap');
   :root {
-    --navy:   #1E3A5F; --teal:   #1A4A35; --steel:  #4A7FA5; --paper:  #F7F6F3;
-    --white:  #FFFFFF; --ink:    #1A1C22; --mid:    #6B7280; --rule:   #E2E0DA;
-    --green:  #2EAA6F; --amber:  #D97706; --red:    #C0392B;
-    --light-navy: #EBF1F7; --light-teal: #E6F4EE; --light-red:  #FEF2F2;
+    --navy:#1E3A5F;--teal:#1A4A35;--steel:#4A7FA5;--paper:#F7F6F3;
+    --white:#FFFFFF;--ink:#1A1C22;--mid:#6B7280;--rule:#E2E0DA;
+    --green:#2EAA6F;--amber:#D97706;--red:#C0392B;
+    --light-navy:#EBF1F7;--light-teal:#E6F4EE;--light-red:#FEF2F2;
   }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'Inter', sans-serif; background: var(--paper); color: var(--ink); font-size: 14px; line-height: 1.5; min-height: 100vh; }
-  #login-screen { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: var(--navy); padding: 24px; }
-  .login-card { background: var(--white); border-radius: 12px; padding: 48px 40px; width: 100%; max-width: 400px; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
-  .login-logo { font-family: 'Space Grotesk', sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: var(--mid); margin-bottom: 6px; }
-  .login-title { font-family: 'Space Grotesk', sans-serif; font-size: 22px; font-weight: 700; color: var(--navy); margin-bottom: 6px; }
-  .login-sub { font-size: 13px; color: var(--mid); margin-bottom: 36px; }
-  .btn-google { display: flex; align-items: center; justify-content: center; gap: 12px; width: 100%; padding: 14px 20px; background: var(--white); border: 1.5px solid var(--rule); border-radius: 8px; font-family: 'Inter', sans-serif; font-size: 14px; font-weight: 500; color: var(--ink); cursor: pointer; transition: all 0.15s; margin-bottom: 12px; }
-  .btn-google:hover { background: var(--paper); border-color: var(--steel); }
-  .btn-email-toggle { font-size: 13px; color: var(--steel); background: none; border: none; cursor: pointer; text-decoration: underline; margin-top: 4px; }
-  .email-login { display: none; margin-top: 20px; text-align: left; }
-  .email-login.show { display: block; }
-  .field-group { margin-bottom: 16px; }
-  .field-group label { display: block; font-size: 12px; font-weight: 600; color: var(--mid); margin-bottom: 5px; letter-spacing: 0.05em; text-transform: uppercase; }
-  .field-group input, .field-group select, .field-group textarea { width: 100%; padding: 10px 12px; border: 1.5px solid var(--rule); border-radius: 6px; font-family: 'Inter', sans-serif; font-size: 14px; color: var(--ink); background: var(--white); transition: border-color 0.15s; outline: none; }
-  .field-group input:focus, .field-group select:focus, .field-group textarea:focus { border-color: var(--steel); }
-  .btn-primary { width: 100%; padding: 12px; background: var(--navy); color: var(--white); border: none; border-radius: 8px; font-family: 'Space Grotesk', sans-serif; font-size: 14px; font-weight: 600; cursor: pointer; transition: background 0.15s; margin-top: 4px; }
-  .btn-primary:hover { background: #162d4a; }
-  .login-error { color: var(--red); font-size: 12px; margin-top: 10px; display: none; }
-  #app { display: none; min-height: 100vh; }
-  .app-header { background: var(--navy); padding: 0 24px; display: flex; align-items: center; justify-content: space-between; height: 56px; position: sticky; top: 0; z-index: 100; }
-  .app-header-left { display: flex; align-items: center; gap: 16px; }
-  .app-brand { font-family: 'Space Grotesk', sans-serif; font-size: 13px; font-weight: 700; color: var(--white); letter-spacing: 0.04em; }
-  .app-brand span { color: #7EB8D9; font-weight: 500; margin-left: 6px; font-size: 12px; }
-  .header-user { display: flex; align-items: center; gap: 10px; }
-  .user-name { font-size: 12px; color: #9CA3AF; }
-  .btn-signout { font-size: 11px; color: #6B7280; background: none; border: 1px solid #374151; border-radius: 4px; padding: 4px 10px; cursor: pointer; font-family: 'Inter', sans-serif; transition: all 0.15s; }
-  .btn-signout:hover { color: var(--white); border-color: #6B7280; }
-  .tab-nav { background: var(--white); border-bottom: 1px solid var(--rule); display: flex; padding: 0 24px; }
-  .tab-btn { padding: 14px 20px; font-family: 'Space Grotesk', sans-serif; font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--mid); background: none; border: none; border-bottom: 3px solid transparent; cursor: pointer; transition: all 0.15s; }
-  .tab-btn:hover { color: var(--ink); }
-  .tab-btn.active { color: var(--navy); border-bottom-color: var(--navy); }
-  .app-main { max-width: 900px; margin: 0 auto; padding: 32px 24px 60px; }
-  .panel { display: none; }
-  .panel.active { display: block; }
-  .search-wrap { position: relative; margin-bottom: 24px; }
-  .search-wrap input { width: 100%; padding: 12px 16px 12px 44px; border: 1.5px solid var(--rule); border-radius: 8px; font-size: 14px; font-family: 'Inter', sans-serif; background: var(--white); outline: none; transition: border-color 0.15s; }
-  .search-wrap input:focus { border-color: var(--steel); }
-  .search-icon { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--mid); pointer-events: none; }
-  .emp-list { display: flex; flex-direction: column; gap: 8px; }
-  .emp-row { background: var(--white); border: 1px solid var(--rule); border-radius: 8px; padding: 14px 16px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; transition: all 0.15s; gap: 12px; }
-  .emp-row:hover { border-color: var(--steel); box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
-  .emp-info { flex: 1; min-width: 0; }
-  .emp-name { font-family: 'Space Grotesk', sans-serif; font-size: 14px; font-weight: 600; color: var(--ink); margin-bottom: 2px; }
-  .emp-meta { font-size: 12px; color: var(--mid); display: flex; gap: 12px; flex-wrap: wrap; }
-  .badge { font-size: 10px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; padding: 2px 8px; border-radius: 3px; white-space: nowrap; }
-  .badge-hae  { background: var(--light-navy); color: var(--navy); }
-  .badge-krc  { background: var(--light-teal); color: var(--teal); }
-  .badge-vuma { background: #FEF3C7; color: #92400E; }
-  .badge-ok   { background: var(--light-teal); color: var(--teal); }
-  .badge-inactive { background: var(--light-red); color: var(--red); }
-  .missing-count { font-size: 11px; color: var(--amber); font-weight: 500; white-space: nowrap; }
-  .edit-header { display: flex; align-items: flex-start; gap: 16px; margin-bottom: 28px; padding-bottom: 20px; border-bottom: 1px solid var(--rule); }
-  .btn-back { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--steel); background: none; border: none; cursor: pointer; font-family: 'Inter', sans-serif; padding: 0; flex-shrink: 0; margin-top: 3px; }
-  .btn-back:hover { color: var(--navy); }
-  .edit-emp-name { font-family: 'Space Grotesk', sans-serif; font-size: 20px; font-weight: 700; color: var(--navy); margin-bottom: 4px; }
-  .edit-emp-meta { font-size: 13px; color: var(--mid); }
-  .section-card { background: var(--white); border: 1px solid var(--rule); border-radius: 10px; margin-bottom: 16px; overflow: hidden; }
-  .section-head { padding: 14px 20px; border-bottom: 1px solid var(--rule); display: flex; align-items: center; justify-content: space-between; }
-  .section-head h3 { font-family: 'Space Grotesk', sans-serif; font-size: 12px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--mid); }
-  .section-body { padding: 20px; }
-  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-  .form-grid .full { grid-column: 1 / -1; }
-  .readonly-field { background: var(--paper); border-color: var(--rule) !important; color: var(--mid) !important; cursor: not-allowed; }
-  .save-bar { position: fixed; bottom: 0; left: 0; right: 0; background: var(--white); border-top: 1px solid var(--rule); padding: 14px 24px; display: flex; align-items: center; justify-content: space-between; gap: 12px; box-shadow: 0 -4px 16px rgba(0,0,0,0.08); z-index: 50; }
-  .save-bar-left { font-size: 13px; color: var(--mid); }
-  .save-bar-left strong { color: var(--ink); }
-  .save-bar-right { display: flex; gap: 10px; }
-  .btn-cancel { padding: 10px 20px; background: none; border: 1.5px solid var(--rule); border-radius: 6px; font-family: 'Space Grotesk', sans-serif; font-size: 13px; font-weight: 600; color: var(--mid); cursor: pointer; transition: all 0.15s; }
-  .btn-cancel:hover { border-color: var(--mid); color: var(--ink); }
-  .btn-save { padding: 10px 24px; background: var(--teal); border: none; border-radius: 6px; font-family: 'Space Grotesk', sans-serif; font-size: 13px; font-weight: 600; color: var(--white); cursor: pointer; transition: background 0.15s; }
-  .btn-save:hover { background: #133a28; }
-  .btn-save:disabled { background: var(--mid); cursor: not-allowed; }
-  .toast { position: fixed; bottom: 80px; right: 24px; background: var(--ink); color: var(--white); padding: 12px 20px; border-radius: 8px; font-size: 13px; font-weight: 500; box-shadow: 0 4px 16px rgba(0,0,0,0.2); opacity: 0; transform: translateY(8px); transition: all 0.2s; pointer-events: none; z-index: 200; }
-  .toast.show { opacity: 1; transform: translateY(0); }
-  .toast.success { background: var(--teal); }
-  .toast.error   { background: var(--red); }
-  .loading { text-align: center; padding: 48px; color: var(--mid); font-size: 13px; }
-  .spinner { width: 24px; height: 24px; border: 2px solid var(--rule); border-top-color: var(--navy); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 12px; }
-  @keyframes spin { to { transform: rotate(360deg); } }
-  .empty { text-align: center; padding: 48px 24px; color: var(--mid); }
-  .empty-icon { font-size: 32px; margin-bottom: 12px; }
-  .empty h3 { font-size: 15px; font-weight: 600; color: var(--ink); margin-bottom: 4px; }
-  .empty p { font-size: 13px; }
-  .page-title { font-family: 'Space Grotesk', sans-serif; font-size: 20px; font-weight: 700; color: var(--navy); margin-bottom: 24px; }
-  @media (max-width: 600px) {
-    .form-grid { grid-template-columns: 1fr; }
-    .form-grid .full { grid-column: 1; }
-    .app-main { padding: 20px 16px 80px; }
-    .save-bar { padding: 12px 16px; }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Inter',sans-serif;background:var(--paper);color:var(--ink);font-size:14px;line-height:1.5;min-height:100vh;}
+  #login-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--navy);padding:24px;}
+  .login-card{background:var(--white);border-radius:12px;padding:48px 40px;width:100%;max-width:400px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.3);}
+  .login-logo{font-family:'Space Grotesk',sans-serif;font-size:11px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:var(--mid);margin-bottom:6px;}
+  .login-title{font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:700;color:var(--navy);margin-bottom:6px;}
+  .login-sub{font-size:13px;color:var(--mid);margin-bottom:36px;}
+  .btn-google{display:flex;align-items:center;justify-content:center;gap:12px;width:100%;padding:14px 20px;background:var(--white);border:1.5px solid var(--rule);border-radius:8px;font-family:'Inter',sans-serif;font-size:14px;font-weight:500;color:var(--ink);cursor:pointer;transition:all 0.15s;margin-bottom:12px;}
+  .btn-google:hover{background:var(--paper);border-color:var(--steel);}
+  .btn-email-toggle{font-size:13px;color:var(--steel);background:none;border:none;cursor:pointer;text-decoration:underline;margin-top:4px;}
+  .email-login{display:none;margin-top:20px;text-align:left;}
+  .email-login.show{display:block;}
+  .field-group{margin-bottom:16px;}
+  .field-group label{display:block;font-size:12px;font-weight:600;color:var(--mid);margin-bottom:5px;letter-spacing:0.05em;text-transform:uppercase;}
+  .field-group input,.field-group select,.field-group textarea{width:100%;padding:10px 12px;border:1.5px solid var(--rule);border-radius:6px;font-family:'Inter',sans-serif;font-size:14px;color:var(--ink);background:var(--white);transition:border-color 0.15s;outline:none;}
+  .field-group input:focus,.field-group select:focus,.field-group textarea:focus{border-color:var(--steel);}
+  .btn-primary{width:100%;padding:12px;background:var(--navy);color:var(--white);border:none;border-radius:8px;font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:600;cursor:pointer;transition:background 0.15s;margin-top:4px;}
+  .btn-primary:hover{background:#162d4a;}
+  .login-error{color:var(--red);font-size:12px;margin-top:10px;display:none;}
+  #app{display:none;min-height:100vh;}
+  .app-header{background:var(--navy);padding:0 24px;display:flex;align-items:center;justify-content:space-between;height:56px;position:sticky;top:0;z-index:100;}
+  .app-header-left{display:flex;align-items:center;gap:16px;}
+  .app-brand{font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:700;color:var(--white);letter-spacing:0.04em;}
+  .app-brand span{color:#7EB8D9;font-weight:500;margin-left:6px;font-size:12px;}
+  .header-user{display:flex;align-items:center;gap:10px;}
+  .user-name{font-size:12px;color:#9CA3AF;}
+  .btn-signout{font-size:11px;color:#6B7280;background:none;border:1px solid #374151;border-radius:4px;padding:4px 10px;cursor:pointer;font-family:'Inter',sans-serif;transition:all 0.15s;}
+  .btn-signout:hover{color:var(--white);border-color:#6B7280;}
+  .tab-nav{background:var(--white);border-bottom:1px solid var(--rule);display:flex;padding:0 24px;}
+  .tab-btn{padding:14px 20px;font-family:'Space Grotesk',sans-serif;font-size:12px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:var(--mid);background:none;border:none;border-bottom:3px solid transparent;cursor:pointer;transition:all 0.15s;}
+  .tab-btn:hover{color:var(--ink);}
+  .tab-btn.active{color:var(--navy);border-bottom-color:var(--navy);}
+  .app-main{max-width:900px;margin:0 auto;padding:32px 24px 60px;}
+  .panel{display:none;}
+  .panel.active{display:block;}
+  .search-wrap{position:relative;margin-bottom:24px;}
+  .search-wrap input{width:100%;padding:12px 16px 12px 44px;border:1.5px solid var(--rule);border-radius:8px;font-size:14px;font-family:'Inter',sans-serif;background:var(--white);outline:none;transition:border-color 0.15s;}
+  .search-wrap input:focus{border-color:var(--steel);}
+  .search-icon{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--mid);pointer-events:none;}
+  .emp-list{display:flex;flex-direction:column;gap:8px;}
+  .emp-row{background:var(--white);border:1px solid var(--rule);border-radius:8px;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;transition:all 0.15s;gap:12px;}
+  .emp-row:hover{border-color:var(--steel);box-shadow:0 2px 8px rgba(0,0,0,0.06);}
+  .emp-info{flex:1;min-width:0;}
+  .emp-name{font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:600;color:var(--ink);margin-bottom:2px;}
+  .emp-meta{font-size:12px;color:var(--mid);display:flex;gap:12px;flex-wrap:wrap;}
+  .badge{font-size:10px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;padding:2px 8px;border-radius:3px;white-space:nowrap;}
+  .badge-hae{background:var(--light-navy);color:var(--navy);}
+  .badge-krc{background:var(--light-teal);color:var(--teal);}
+  .badge-vuma{background:#FEF3C7;color:#92400E;}
+  .badge-warn{background:#FEF3C7;color:#92400E;}
+  .badge-ok{background:var(--light-teal);color:var(--teal);}
+  .badge-inactive{background:var(--light-red);color:var(--red);}
+  .missing-count{font-size:11px;color:var(--amber);font-weight:500;white-space:nowrap;}
+  .edit-header{display:flex;align-items:flex-start;gap:16px;margin-bottom:28px;padding-bottom:20px;border-bottom:1px solid var(--rule);}
+  .btn-back{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--steel);background:none;border:none;cursor:pointer;font-family:'Inter',sans-serif;padding:0;flex-shrink:0;margin-top:3px;}
+  .btn-back:hover{color:var(--navy);}
+  .edit-emp-name{font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:700;color:var(--navy);margin-bottom:4px;}
+  .edit-emp-meta{font-size:13px;color:var(--mid);}
+  .section-card{background:var(--white);border:1px solid var(--rule);border-radius:10px;margin-bottom:16px;overflow:hidden;}
+  .section-head{padding:14px 20px;border-bottom:1px solid var(--rule);display:flex;align-items:center;justify-content:space-between;}
+  .section-head h3{font-family:'Space Grotesk',sans-serif;font-size:12px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--mid);}
+  .section-body{padding:20px;}
+  .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+  .form-grid .full{grid-column:1/-1;}
+  .readonly-field{background:var(--paper);border-color:var(--rule)!important;color:var(--mid)!important;cursor:not-allowed;}
+  .save-bar{position:fixed;bottom:0;left:0;right:0;background:var(--white);border-top:1px solid var(--rule);padding:14px 24px;display:flex;align-items:center;justify-content:space-between;gap:12px;box-shadow:0 -4px 16px rgba(0,0,0,0.08);z-index:50;}
+  .save-bar-left{font-size:13px;color:var(--mid);}
+  .save-bar-left strong{color:var(--ink);}
+  .save-bar-right{display:flex;gap:10px;}
+  .btn-cancel{padding:10px 20px;background:none;border:1.5px solid var(--rule);border-radius:6px;font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:600;color:var(--mid);cursor:pointer;transition:all 0.15s;}
+  .btn-cancel:hover{border-color:var(--mid);color:var(--ink);}
+  .btn-save{padding:10px 24px;background:var(--teal);border:none;border-radius:6px;font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:600;color:var(--white);cursor:pointer;transition:background 0.15s;}
+  .btn-save:hover{background:#133a28;}
+  .btn-save:disabled{background:var(--mid);cursor:not-allowed;}
+  .toast{position:fixed;bottom:80px;right:24px;background:var(--ink);color:var(--white);padding:12px 20px;border-radius:8px;font-size:13px;font-weight:500;box-shadow:0 4px 16px rgba(0,0,0,0.2);opacity:0;transform:translateY(8px);transition:all 0.2s;pointer-events:none;z-index:200;}
+  .toast.show{opacity:1;transform:translateY(0);}
+  .toast.success{background:var(--teal);}
+  .toast.error{background:var(--red);}
+  .loading{text-align:center;padding:48px;color:var(--mid);font-size:13px;}
+  .spinner{width:24px;height:24px;border:2px solid var(--rule);border-top-color:var(--navy);border-radius:50%;animation:spin 0.8s linear infinite;margin:0 auto 12px;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .empty{text-align:center;padding:48px 24px;color:var(--mid);}
+  .empty-icon{font-size:32px;margin-bottom:12px;}
+  .empty h3{font-size:15px;font-weight:600;color:var(--ink);margin-bottom:4px;}
+  .empty p{font-size:13px;}
+  .page-title{font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:700;color:var(--navy);margin-bottom:24px;}
+  @media(max-width:600px){
+    .form-grid{grid-template-columns:1fr;}
+    .form-grid .full{grid-column:1;}
+    .app-main{padding:20px 16px 80px;}
+    .save-bar{padding:12px 16px;}
   }
-  .upload-btn-main { display: inline-flex; align-items: center; gap: 8px; padding: 9px 18px; background: var(--navy); color: var(--white); border: none; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; margin-bottom: 16px; font-family: inherit; }
-  .upload-btn-main:hover { background: #162c4a; }
-  .doc-tabs { display: flex; gap: 4px; margin-bottom: 16px; border-bottom: 1px solid var(--rule); }
-  .doc-tab { padding: 8px 16px; font-size: 13px; font-weight: 600; color: var(--mid); background: none; border: none; border-bottom: 2px solid transparent; cursor: pointer; font-family: inherit; }
-  .doc-tab.active { color: var(--navy); border-bottom-color: var(--navy); }
-  .doc-list { list-style: none; }
-  .doc-item { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--rule); font-size: 13px; }
-  .doc-item:last-child { border-bottom: none; }
-  .doc-icon { font-size: 20px; flex-shrink: 0; }
-  .doc-info { flex: 1; }
-  .doc-name { font-weight: 500; color: var(--ink); }
-  .doc-meta { font-size: 11px; color: var(--mid); margin-top: 2px; }
-  .doc-actions { display: flex; gap: 6px; }
-  .doc-btn { font-size: 11px; padding: 3px 10px; border-radius: 4px; cursor: pointer; font-family: inherit; font-weight: 600; border: 1px solid; }
-  .doc-btn-view { background: var(--light-navy); color: var(--navy); border-color: var(--navy); }
-  .doc-btn-del  { background: var(--light-red);  color: var(--red);  border-color: var(--red);  }
-  .modal-overlay { position: fixed; inset: 0; background: rgba(20,30,45,0.55); display: none; align-items: center; justify-content: center; z-index: 300; padding: 24px; }
-  .modal-overlay.show { display: flex; }
-  .modal-card { background: var(--white); border-radius: 12px; width: 100%; max-width: 520px; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
-  .modal-head { background: var(--navy); padding: 16px 20px; display: flex; align-items: center; justify-content: space-between; }
-  .modal-title { font-size: 15px; font-weight: 700; color: var(--white); }
-  .modal-close { background: none; border: none; color: rgba(255,255,255,0.6); font-size: 20px; cursor: pointer; }
-  .modal-body { padding: 20px; }
-  .modal-footer { padding: 14px 20px; border-top: 1px solid var(--rule); display: flex; justify-content: flex-end; gap: 8px; }
-  .upload-drop { border: 2px dashed var(--rule); border-radius: 8px; padding: 32px; text-align: center; cursor: pointer; position: relative; transition: all 0.15s; }
-  .upload-drop:hover, .upload-drop.over { border-color: var(--navy); background: var(--light-navy); }
-  .upload-drop input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
-  .upload-drop-icon { font-size: 28px; margin-bottom: 8px; }
-  .upload-drop-text { font-size: 13px; color: var(--mid); }
-  .ai-suggestion { background: var(--light-teal); border: 1px solid #a7f3d0; border-radius: 8px; padding: 12px 14px; margin: 12px 0; font-size: 13px; }
-  .ai-suggestion .ai-label { font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--teal); margin-bottom: 6px; }
-  .ai-suggestion .ai-confidence { font-size: 11px; color: var(--mid); margin-top: 4px; }
-  .progress-bar { height: 4px; background: var(--rule); border-radius: 2px; margin-top: 10px; overflow: hidden; }
-  .progress-fill { height: 100%; background: var(--teal); border-radius: 2px; width: 0%; transition: width 0.3s; }
-  .modal-field { margin-bottom: 14px; }
-  .modal-label { display: block; font-size: 12px; font-weight: 700; color: var(--mid); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 5px; }
-  .modal-select, .modal-input { width: 100%; padding: 9px 12px; border: 1.5px solid var(--rule); border-radius: 6px; font-size: 13px; color: var(--ink); background: var(--white); outline: none; font-family: inherit; }
-  .modal-select:focus, .modal-input:focus { border-color: var(--navy); }
+  .upload-btn-main{display:inline-flex;align-items:center;gap:8px;padding:9px 18px;background:var(--navy);color:var(--white);border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;margin-bottom:16px;font-family:inherit;}
+  .upload-btn-main:hover{background:#162c4a;}
+  .doc-tabs{display:flex;gap:4px;margin-bottom:16px;border-bottom:1px solid var(--rule);}
+  .doc-tab{padding:8px 16px;font-size:13px;font-weight:600;color:var(--mid);background:none;border:none;border-bottom:2px solid transparent;cursor:pointer;font-family:inherit;}
+  .doc-tab.active{color:var(--navy);border-bottom-color:var(--navy);}
+  .doc-list{list-style:none;}
+  .doc-item{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--rule);font-size:13px;}
+  .doc-item:last-child{border-bottom:none;}
+  .doc-icon{font-size:20px;flex-shrink:0;}
+  .doc-info{flex:1;}
+  .doc-name{font-weight:500;color:var(--ink);}
+  .doc-meta{font-size:11px;color:var(--mid);margin-top:2px;}
+  .doc-actions{display:flex;gap:6px;}
+  .doc-btn{font-size:11px;padding:3px 10px;border-radius:4px;cursor:pointer;font-family:inherit;font-weight:600;border:1px solid;}
+  .doc-btn-view{background:var(--light-navy);color:var(--navy);border-color:var(--navy);}
+  .doc-btn-del{background:var(--light-red);color:var(--red);border-color:var(--red);}
+  .modal-overlay{position:fixed;inset:0;background:rgba(20,30,45,0.55);display:none;align-items:center;justify-content:center;z-index:300;padding:24px;}
+  .modal-overlay.show{display:flex;}
+  .modal-card{background:var(--white);border-radius:12px;width:100%;max-width:520px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,0.3);}
+  .modal-head{background:var(--navy);padding:16px 20px;display:flex;align-items:center;justify-content:space-between;}
+  .modal-title{font-size:15px;font-weight:700;color:var(--white);}
+  .modal-close{background:none;border:none;color:rgba(255,255,255,0.6);font-size:20px;cursor:pointer;}
+  .modal-body{padding:20px;}
+  .modal-footer{padding:14px 20px;border-top:1px solid var(--rule);display:flex;justify-content:flex-end;gap:8px;}
+  .upload-drop{border:2px dashed var(--rule);border-radius:8px;padding:32px;text-align:center;cursor:pointer;position:relative;transition:all 0.15s;}
+  .upload-drop:hover,.upload-drop.over{border-color:var(--navy);background:var(--light-navy);}
+  .upload-drop input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
+  .upload-drop-icon{font-size:28px;margin-bottom:8px;}
+  .upload-drop-text{font-size:13px;color:var(--mid);}
+  .ai-suggestion{background:var(--light-teal);border:1px solid #a7f3d0;border-radius:8px;padding:12px 14px;margin:12px 0;font-size:13px;}
+  .ai-suggestion .ai-label{font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--teal);margin-bottom:6px;}
+  .ai-suggestion .ai-confidence{font-size:11px;color:var(--mid);margin-top:4px;}
+  .progress-bar{height:4px;background:var(--rule);border-radius:2px;margin-top:10px;overflow:hidden;}
+  .progress-fill{height:100%;background:var(--teal);border-radius:2px;width:0%;transition:width 0.3s;}
+  .modal-field{margin-bottom:14px;}
+  .modal-label{display:block;font-size:12px;font-weight:700;color:var(--mid);letter-spacing:0.06em;text-transform:uppercase;margin-bottom:5px;}
+  .modal-select,.modal-input{width:100%;padding:9px 12px;border:1.5px solid var(--rule);border-radius:6px;font-size:13px;color:var(--ink);background:var(--white);outline:none;font-family:inherit;}
+  .modal-select:focus,.modal-input:focus{border-color:var(--navy);}
 </style>
 </head>
 <body>
@@ -316,18 +317,21 @@ const db      = getFirestore(app);
 const storage = getStorage(app);
 const provider = new GoogleAuthProvider();
 
-// ── CHANGE 1 of 3: Pay Frequency option values — must match Supabase payroll.pay_frequencies.name exactly
+const DOC_TYPES = [
+  'ID Document','CV / Resume','Qualifications / Certificates','SANC Registration',
+  'Professional Indemnity','Medical Certificate / Fitness to Work',
+  'Reference Letters','Signed Employment Contract','Other'
+];
+
+// Pay point options — single source of truth for dropdowns
+const PAY_POINTS = ['', 'H@E', 'KRC', 'Vuma', 'Other'];
+
+// Pay frequency options — must match Supabase payroll.pay_frequencies.name exactly
 const PAY_FREQUENCIES = [
   '',
   'Monthly, ending on the 31st - Pay Run Month End',
   'Monthly, ending on the 15th - Pay Run 15',
   'Twice a Month, ending on the 31st - Two Weekly'
-];
-
-const DOC_TYPES = [
-  'ID Document','CV / Resume','Qualifications / Certificates','SANC Registration',
-  'Professional Indemnity','Medical Certificate / Fitness to Work',
-  'Reference Letters','Signed Employment Contract','Other'
 ];
 
 let allEmployees  = [];
@@ -350,14 +354,14 @@ async function checkAccess(user) {
 
 window.signInGoogle = async () => {
   try { await signInWithPopup(auth, provider); }
-  catch (e) { showLoginError(e.message); }
+  catch(e) { showLoginError(e.message); }
 };
 
 window.signInEmail = async () => {
   const email = document.getElementById('login-email').value;
   const pass  = document.getElementById('login-password').value;
   try { await signInWithEmailAndPassword(auth, email, pass); }
-  catch (e) { showLoginError("Invalid email or password."); }
+  catch(e) { showLoginError("Invalid email or password."); }
 };
 
 window.signOut = async () => {
@@ -367,14 +371,11 @@ window.signOut = async () => {
   allEmployees = [];
 };
 
-window.toggleEmailLogin = () => {
-  document.getElementById('email-login').classList.toggle('show');
-};
+window.toggleEmailLogin = () => document.getElementById('email-login').classList.toggle('show');
 
 function showLoginError(msg) {
   const el = document.getElementById('login-error');
-  el.textContent = msg;
-  el.style.display = 'block';
+  el.textContent = msg; el.style.display = 'block';
 }
 
 onAuthStateChanged(auth, async (user) => {
@@ -412,7 +413,7 @@ async function loadEmployees() {
     allEmployees.sort((a, b) => (a.fullName || '').localeCompare(b.fullName || ''));
     await loadDocCounts();
     renderList(allEmployees);
-  } catch (e) {
+  } catch(e) {
     document.getElementById('emp-list-container').innerHTML =
       `<div class="empty"><div class="empty-icon">⚠️</div><h3>Could not load records</h3><p>${e.message}</p></div>`;
   }
@@ -424,9 +425,10 @@ function renderList(employees) {
     container.innerHTML = `<div class="empty"><div class="empty-icon">🔍</div><h3>No results</h3><p>Try a different search term.</p></div>`;
     return;
   }
-  const facilityBadge = f => {
-    const map = { HAE: 'badge-hae', KRC: 'badge-krc', Vuma: 'badge-vuma' };
-    return `<span class="badge ${map[f] || 'badge-hae'}">${f || 'HAE'}</span>`;
+  // Badge now shows payPoint — maps to correct colour per pay point code
+  const payPointBadge = p => {
+    const map = { 'H@E': 'badge-hae', KRC: 'badge-krc', Vuma: 'badge-vuma', Other: 'badge-warn' };
+    return `<span class="badge ${map[p] || 'badge-hae'}">${p || '—'}</span>`;
   };
   const html = `<div class="emp-list">${employees.map(emp => {
     const missing  = (emp.missingFields || []).length;
@@ -446,7 +448,7 @@ function renderList(employees) {
         <div class="emp-meta">
           <span>${emp.employeeNumber || ''}</span>
           <span>${emp.position || '—'}</span>
-          ${facilityBadge(emp.facility)}
+          ${payPointBadge(emp.payPoint)}
         </div>
       </div>
       ${statusBadge} ${docBadge}
@@ -473,8 +475,9 @@ window.openEmployee = (docId) => {
   currentEmpDoc = allEmployees.find(e => e.id === docId) || {};
   const emp     = currentEmpDoc;
   document.getElementById('edit-emp-name').textContent = emp.fullName || '—';
+  // Meta line now shows payPoint instead of facility
   document.getElementById('edit-emp-meta').textContent =
-    `${emp.employeeNumber || ''} · ${emp.position || ''} · ${emp.facility || ''}`;
+    `${emp.employeeNumber || ''} · ${emp.position || ''} · ${emp.payPoint || ''}`;
   document.getElementById('save-bar-name').textContent = emp.fullName || '—';
   document.getElementById('edit-form-body').innerHTML = buildEditForm(emp);
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
@@ -514,8 +517,7 @@ function buildEditForm(emp) {
           <div class="field-group"><label>ID Number — locked</label>${ro(emp.idNumber)}</div>
           <div class="field-group"><label>Date of Birth</label>${inp('dateOfBirth', emp.dateOfBirth, 'date')}</div>
           <div class="field-group"><label>Position / Job Title</label>${inp('position', emp.position)}</div>
-          <div class="field-group"><label>Facility</label>${sel('facility', emp.facility, ['HAE','KRC','Vuma'])}</div>
-          <div class="field-group"><label>Pay Point</label>${sel('payPoint', emp.payPoint, ['H@E','KRC','Vuma'])}</div>
+          <div class="field-group"><label>Pay Point</label>${sel('payPoint', emp.payPoint, PAY_POINTS)}</div>
           <div class="field-group"><label>Pay Frequency</label>${sel('payFrequency', emp.payFrequency, PAY_FREQUENCIES)}</div>
           <div class="field-group"><label>Start Date</label>${inp('startDate', emp.startDate, 'date')}</div>
           <div class="field-group"><label>End Date (resigned)</label>${inp('endDate', emp.endDate, 'date')}</div>
@@ -591,21 +593,18 @@ function buildEditForm(emp) {
 
 window.saveEmployee = async () => {
   const btn = document.getElementById('btn-save');
-  btn.disabled = true;
-  btn.textContent = 'Saving…';
+  btn.disabled = true; btn.textContent = 'Saving…';
   try {
     const get  = (id) => { const el = document.getElementById(`f_${id}`); return el ? el.value.trim() : ''; };
     const bool = (id) => get(id) === 'Yes';
-
     const updates = {
       fullName:     get('fullName'),
       lastName:     get('fullName').split(',')[0].trim(),
       firstName:    get('fullName').includes(',') ? get('fullName').split(',')[1].trim() : '',
       dateOfBirth:  get('dateOfBirth'),
       position:     get('position'),
-      facility:     get('facility'),
       payPoint:     get('payPoint'),
-      payFrequency: get('payFrequency'),   // ── CHANGE 2 of 3: write payFrequency to Firestore
+      payFrequency: get('payFrequency'),
       startDate:    get('startDate'),
       endDate:      get('endDate'),
       active:       get('active') === 'Active',
@@ -627,7 +626,7 @@ window.saveEmployee = async () => {
         category:           get('reg_category'),
         expiryDate:         get('reg_expiry'),
       },
-      paymentMethod:  get('paymentMethod'),
+      paymentMethod:   get('paymentMethod'),
       incomeTaxNumber: get('incomeTaxNumber'),
       banking: {
         bank:               get('bank_bank'),
@@ -649,7 +648,6 @@ window.saveEmployee = async () => {
       updatedBy: auth.currentUser?.email || 'unknown',
     };
 
-    // ── CHANGE 3 of 3: payFrequency added to completeness check
     const missing = [];
     if (!updates.payFrequency) missing.push('payFrequency');
     if (!updates.gender)       missing.push('gender');
@@ -669,11 +667,10 @@ window.saveEmployee = async () => {
     if (idx >= 0) allEmployees[idx] = { ...allEmployees[idx], ...updates };
     showToast('Record saved', 'success');
     setTimeout(() => backToList(), 800);
-  } catch (e) {
+  } catch(e) {
     showToast('Save failed: ' + e.message, 'error');
   } finally {
-    btn.disabled = false;
-    btn.textContent = 'Save changes';
+    btn.disabled = false; btn.textContent = 'Save changes';
   }
 };
 
@@ -709,8 +706,8 @@ function buildNewForm() {
       <div class="section-head"><h3>Employment</h3></div>
       <div class="section-body">
         <div class="form-grid">
-          <div class="field-group"><label>Facility *</label>${sel('facility',['','HAE','KRC','Vuma'])}</div>
-          <div class="field-group"><label>Pay Point</label>${sel('payPoint',['','H@E','KRC','Vuma'])}</div>
+          <div class="field-group"><label>Pay Point *</label>${sel('payPoint',PAY_POINTS)}</div>
+          <div class="field-group"><label>Pay Frequency</label>${sel('payFrequency',PAY_FREQUENCIES)}</div>
           <div class="field-group"><label>Department</label>${sel('department',['','Nursing','Administration','Support Services','Security','Management','Maintenance','Pharmacy','Kitchen','Finance','HR','Consulting'])}</div>
           <div class="field-group"><label>Position / Job Title *</label>${inp('position')}</div>
           <div class="field-group"><label>Contract Type</label>${sel('contractType',['','Permanent','Fixed-Term','Part-Time','Locum','Agency'])}</div>
@@ -762,8 +759,8 @@ window.saveNewEmployee = async () => {
   const get  = (id) => { const el = document.getElementById(`n_${id}`); return el ? el.value.trim() : ''; };
   const bool = (id) => get(id) === 'Yes';
   const empNum = get('employeeNumber'), name = get('fullName'), idNum = get('idNumber'),
-        start  = get('startDate'), facility = get('facility'), position = get('position');
-  if (!empNum || !name || !idNum || !start || !facility || !position) {
+        start  = get('startDate'), payPoint = get('payPoint'), position = get('position');
+  if (!empNum || !name || !idNum || !start || !payPoint || !position) {
     showToast('Fill in all required fields (*)', 'error');
     btn.disabled = false; btn.textContent = 'Create record'; return;
   }
@@ -776,11 +773,10 @@ window.saveNewEmployee = async () => {
     gender: get('gender'), equityGroup: get('equityGroup'), disability: get('disability'),
     nationality: get('nationality') || 'South African',
     email: get('email'), cellphone: get('cellphone'),
-    facility, payPoint: get('payPoint'), department: get('department'),
-    position, contractType: get('contractType'), startDate: start,
+    payPoint, payFrequency: get('payFrequency'), department: get('department'), position,
+    contractType: get('contractType'), startDate: start,
     endDate: '', active: true, managerId: get('managerId'),
     accessLevel: 'authenticated', paymentMethod: get('paymentMethod'),
-    payFrequency: '',
     banking: { bank: get('bank'), accountNumber: get('accountNumber'), branchCode: get('branchCode'), accountType: get('accountType'), holderRelationship: get('holderRelationship'), holderName: get('holderName') },
     professionalRegistration: { body: get('reg_body'), registrationNumber: get('reg_number'), category: get('reg_category'), expiryDate: get('reg_expiry') },
     popiaConsent: bool('popiaConsent'), backgroundCheckConsent: bool('backgroundCheckConsent'),
@@ -797,7 +793,7 @@ window.saveNewEmployee = async () => {
     allEmployees.sort((a,b) => (a.fullName||'').localeCompare(b.fullName||''));
     showToast(`${name} added successfully`, 'success');
     setTimeout(() => showTab('search'), 800);
-  } catch (e) {
+  } catch(e) {
     showToast('Failed to create record: ' + e.message, 'error');
   } finally { btn.disabled = false; btn.textContent = 'Create record'; }
 };
@@ -998,9 +994,8 @@ window.confirmUpload = async function() {
     const { ref: r, uploadBytesResumable: ubr, getDownloadURL: gdl } =
       await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js');
     const storageRef = r(storage, storagePath);
-    const progress = document.getElementById('upload-progress');
-    const fill     = document.getElementById('progress-fill');
-    progress.style.display = 'block';
+    document.getElementById('upload-progress').style.display = 'block';
+    const fill = document.getElementById('progress-fill');
     await new Promise((resolve, reject) => {
       const task = ubr(storageRef, uploadFile);
       task.on('state_changed',
