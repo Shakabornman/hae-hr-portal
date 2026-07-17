@@ -1,0 +1,1159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HAE Disciplinary — HR Portal</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap');
+  :root {
+    --navy:#1E3A5F;--teal:#1A4A35;--steel:#4A7FA5;--paper:#F7F6F3;
+    --white:#FFFFFF;--ink:#1A1C22;--mid:#6B7280;--rule:#E2E0DA;
+    --amber:#D97706;--red:#C0392B;--green:#2EAA6F;
+    --light-navy:#EBF1F7;--light-teal:#E6F4EE;--light-red:#FEF2F2;--light-amber:#FEF3C7;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Inter',sans-serif;background:var(--paper);color:var(--ink);font-size:14px;line-height:1.5;min-height:100vh;}
+
+  /* LOGIN */
+  #login-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--navy);padding:24px;}
+  .login-card{background:var(--white);border-radius:12px;padding:48px 40px;width:100%;max-width:400px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.3);}
+  .login-logo{font-family:'Space Grotesk',sans-serif;font-size:11px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:var(--mid);margin-bottom:6px;}
+  .login-title{font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:700;color:var(--navy);margin-bottom:6px;}
+  .login-sub{font-size:13px;color:var(--mid);margin-bottom:36px;}
+  .btn-email-toggle{font-size:13px;color:var(--steel);background:none;border:none;cursor:pointer;text-decoration:underline;margin-top:4px;}
+  .email-login{display:none;margin-top:20px;text-align:left;}
+  .email-login.show{display:block;}
+  .field-group{margin-bottom:16px;}
+  .field-group label{display:block;font-size:12px;font-weight:600;color:var(--mid);margin-bottom:5px;letter-spacing:0.05em;text-transform:uppercase;}
+  .field-group input,.field-group select,.field-group textarea{width:100%;padding:10px 12px;border:1.5px solid var(--rule);border-radius:6px;font-family:'Inter',sans-serif;font-size:14px;color:var(--ink);background:var(--white);transition:border-color 0.15s;outline:none;}
+  .field-group input:focus,.field-group select:focus,.field-group textarea:focus{border-color:var(--steel);}
+  .field-group textarea{resize:vertical;min-height:80px;}
+  .btn-primary{width:100%;padding:12px;background:var(--navy);color:var(--white);border:none;border-radius:8px;font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:600;cursor:pointer;transition:background 0.15s;margin-top:4px;}
+  .btn-primary:hover{background:#162d4a;}
+  .login-error{color:var(--red);font-size:12px;margin-top:10px;display:none;}
+
+  /* APP */
+  #app{display:none;min-height:100vh;}
+  .app-header{background:var(--navy);padding:0 24px;display:flex;align-items:center;justify-content:space-between;height:56px;position:sticky;top:0;z-index:100;}
+  .app-brand{font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:700;color:var(--white);letter-spacing:0.04em;}
+  .app-brand span{color:#7EB8D9;font-weight:500;margin-left:6px;font-size:12px;}
+  .header-right{display:flex;align-items:center;gap:12px;}
+  .btn-portal-link{font-size:12px;color:#7EB8D9;background:none;border:1px solid rgba(126,184,217,0.4);border-radius:4px;padding:4px 10px;cursor:pointer;font-family:'Inter',sans-serif;text-decoration:none;transition:all 0.15s;}
+  .btn-portal-link:hover{background:rgba(126,184,217,0.1);}
+  .user-name{font-size:12px;color:#9CA3AF;}
+  .btn-signout{font-size:11px;color:#6B7280;background:none;border:1px solid #374151;border-radius:4px;padding:4px 10px;cursor:pointer;font-family:'Inter',sans-serif;transition:all 0.15s;}
+  .btn-signout:hover{color:var(--white);border-color:#6B7280;}
+
+  /* TAB NAV */
+  .tab-nav{background:var(--white);border-bottom:1px solid var(--rule);display:flex;padding:0 24px;}
+  .tab-btn{padding:14px 20px;font-family:'Space Grotesk',sans-serif;font-size:12px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:var(--mid);background:none;border:none;border-bottom:3px solid transparent;cursor:pointer;transition:all 0.15s;}
+  .tab-btn:hover{color:var(--ink);}
+  .tab-btn.active{color:var(--navy);border-bottom-color:var(--navy);}
+
+  /* MAIN */
+  .app-main{max-width:960px;margin:0 auto;padding:32px 24px 60px;}
+  .panel{display:none;}
+  .panel.active{display:block;}
+
+  /* BADGES */
+  .badge{display:inline-block;font-size:10px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;padding:2px 8px;border-radius:3px;white-space:nowrap;}
+  .badge-navy{background:var(--light-navy);color:var(--navy);}
+  .badge-teal{background:var(--light-teal);color:var(--teal);}
+  .badge-amber{background:var(--light-amber);color:#92400E;}
+  .badge-red{background:var(--light-red);color:var(--red);}
+  .badge-ok{background:var(--light-teal);color:var(--teal);}
+  .badge-mid{background:#F3F4F6;color:var(--mid);}
+
+  /* CASE LIST */
+  .list-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;}
+  .list-title{font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:700;color:var(--navy);}
+  .btn-new-case{display:inline-flex;align-items:center;gap:6px;padding:9px 18px;background:var(--navy);color:var(--white);border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:background 0.15s;}
+  .btn-new-case:hover{background:#162c4a;}
+  .filter-tabs{display:flex;gap:4px;margin-bottom:20px;border-bottom:1px solid var(--rule);overflow-x:auto;}
+  .filter-tab{padding:8px 16px;font-size:12px;font-weight:600;color:var(--mid);background:none;border:none;border-bottom:2px solid transparent;cursor:pointer;font-family:inherit;transition:all 0.15s;white-space:nowrap;}
+  .filter-tab.active{color:var(--navy);border-bottom-color:var(--navy);}
+  .case-list{display:flex;flex-direction:column;gap:8px;}
+  .case-row{background:var(--white);border:1px solid var(--rule);border-radius:8px;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;transition:all 0.15s;gap:12px;}
+  .case-row:hover{border-color:var(--steel);box-shadow:0 2px 8px rgba(0,0,0,0.06);}
+  .case-info{flex:1;min-width:0;}
+  .case-ref{font-family:'Space Grotesk',sans-serif;font-size:11px;font-weight:600;color:var(--mid);letter-spacing:0.06em;margin-bottom:2px;}
+  .case-name{font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:600;color:var(--ink);margin-bottom:4px;}
+  .case-meta{font-size:12px;color:var(--mid);display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+  .case-badges{display:flex;gap:6px;align-items:center;flex-shrink:0;}
+  .status-pill{display:inline-flex;align-items:center;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;}
+  .status-open{background:var(--light-amber);color:#92400E;}
+  .status-closed{background:var(--light-teal);color:var(--teal);}
+  .status-ccma{background:var(--light-red);color:var(--red);}
+
+  /* SECTION CARDS */
+  .section-card{background:var(--white);border:1px solid var(--rule);border-radius:10px;margin-bottom:16px;overflow:hidden;}
+  .section-head{padding:14px 20px;border-bottom:1px solid var(--rule);display:flex;align-items:center;justify-content:space-between;}
+  .section-head h3{font-family:'Space Grotesk',sans-serif;font-size:12px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--mid);}
+  .section-body{padding:20px;}
+  .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+
+  /* DETAIL */
+  .detail-header{display:flex;align-items:flex-start;gap:16px;margin-bottom:24px;padding-bottom:20px;border-bottom:1px solid var(--rule);}
+  .btn-back{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--steel);background:none;border:none;cursor:pointer;font-family:'Inter',sans-serif;padding:0;flex-shrink:0;margin-top:3px;}
+  .btn-back:hover{color:var(--navy);}
+  .detail-main{flex:1;}
+  .detail-case-ref{font-family:'Space Grotesk',sans-serif;font-size:11px;font-weight:600;color:var(--mid);letter-spacing:0.08em;margin-bottom:4px;}
+  .detail-emp-name{font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:700;color:var(--navy);margin-bottom:6px;}
+  .detail-meta{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+  .info-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+  .info-item label{display:block;font-size:11px;font-weight:600;color:var(--mid);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:2px;}
+  .info-item span{font-size:13px;color:var(--ink);}
+  .info-item.full{grid-column:1/-1;}
+
+  /* TIMELINE */
+  .timeline{position:relative;padding-left:32px;}
+  .timeline::before{content:'';position:absolute;left:11px;top:0;bottom:0;width:2px;background:var(--rule);}
+  .timeline-event{position:relative;margin-bottom:20px;}
+  .timeline-dot{position:absolute;left:-32px;top:16px;width:10px;height:10px;border-radius:50%;background:var(--navy);border:2px solid var(--white);box-shadow:0 0 0 2px var(--navy);}
+  .timeline-card{background:var(--white);border:1px solid var(--rule);border-radius:8px;padding:14px 16px;}
+  .timeline-card-head{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:6px;}
+  .timeline-stage-label{font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:700;color:var(--navy);}
+  .timeline-date{font-size:11px;color:var(--mid);white-space:nowrap;}
+  .timeline-by{font-size:12px;color:var(--mid);margin-bottom:6px;}
+  .timeline-notes{font-size:13px;color:var(--ink);margin-bottom:8px;white-space:pre-wrap;}
+
+  /* STAGE DOCS */
+  .stage-docs{margin-top:10px;padding-top:10px;border-top:1px solid var(--rule);}
+  .stage-docs-label{font-size:10px;font-weight:700;color:var(--mid);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:8px;}
+  .doc-chips{display:flex;gap:8px;flex-wrap:wrap;}
+  .doc-chip{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:4px;font-size:11px;font-weight:600;border:1px solid;cursor:pointer;text-decoration:none;}
+  .doc-chip-issued{background:var(--light-navy);color:var(--navy);border-color:var(--navy);}
+  .doc-chip-receipt{background:var(--light-teal);color:var(--teal);border-color:var(--teal);}
+  .doc-chip-add{background:var(--light-amber);color:#92400E;border-color:#FCD34D;border-style:dashed;}
+
+  /* BUTTONS */
+  .btn-action{padding:8px 16px;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:all 0.15s;border:none;}
+  .btn-action-primary{background:var(--teal);color:var(--white);}
+  .btn-action-primary:hover{background:#133a28;}
+  .btn-action-secondary{background:none;border:1.5px solid var(--rule);color:var(--mid);}
+  .btn-action-secondary:hover{border-color:var(--mid);color:var(--ink);}
+
+  /* TOGGLE */
+  .toggle-row{display:flex;gap:8px;}
+  .toggle-btn{flex:1;padding:10px;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;border:1.5px solid var(--rule);background:var(--white);color:var(--mid);transition:all 0.15s;text-align:center;}
+  .toggle-btn.selected{background:var(--navy);color:var(--white);border-color:var(--navy);}
+
+  /* TRACK NOTICE */
+  .track-notice{padding:10px 14px;border-radius:6px;font-size:12px;margin-top:10px;}
+  .track-progressive{background:var(--light-navy);color:var(--navy);border:1px solid #BFDBFE;}
+  .track-gross{background:var(--light-red);color:var(--red);border:1px solid #FECACA;}
+
+  /* MODALS */
+  .modal-overlay{position:fixed;inset:0;background:rgba(20,30,45,0.55);display:none;align-items:center;justify-content:center;z-index:300;padding:24px;}
+  .modal-overlay.show{display:flex;}
+  .modal-card{background:var(--white);border-radius:12px;width:100%;max-width:560px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,0.3);max-height:90vh;overflow-y:auto;}
+  .modal-head{background:var(--navy);padding:16px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:1;}
+  .modal-title{font-size:15px;font-weight:700;color:var(--white);font-family:'Space Grotesk',sans-serif;}
+  .modal-close{background:none;border:none;color:rgba(255,255,255,0.6);font-size:20px;cursor:pointer;}
+  .modal-body{padding:20px;}
+  .modal-footer{padding:14px 20px;border-top:1px solid var(--rule);display:flex;justify-content:flex-end;gap:8px;position:sticky;bottom:0;background:var(--white);}
+  .modal-field{margin-bottom:14px;}
+  .modal-label{display:block;font-size:12px;font-weight:700;color:var(--mid);letter-spacing:0.06em;text-transform:uppercase;margin-bottom:5px;}
+  .modal-select,.modal-input,.modal-textarea{width:100%;padding:9px 12px;border:1.5px solid var(--rule);border-radius:6px;font-size:13px;color:var(--ink);background:var(--white);outline:none;font-family:inherit;}
+  .modal-select:focus,.modal-input:focus,.modal-textarea:focus{border-color:var(--navy);}
+  .modal-textarea{resize:vertical;min-height:80px;}
+  .modal-hint{font-size:11px;color:var(--mid);margin-top:5px;}
+
+  /* UPLOAD */
+  .upload-drop{border:2px dashed var(--rule);border-radius:8px;padding:24px;text-align:center;cursor:pointer;position:relative;transition:all 0.15s;}
+  .upload-drop:hover,.upload-drop.over{border-color:var(--navy);background:var(--light-navy);}
+  .upload-drop input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
+  .upload-drop-icon{font-size:24px;margin-bottom:6px;}
+  .upload-drop-text{font-size:13px;color:var(--mid);}
+  .progress-bar{height:4px;background:var(--rule);border-radius:2px;margin-top:10px;overflow:hidden;}
+  .progress-fill{height:100%;background:var(--teal);border-radius:2px;width:0%;transition:width 0.3s;}
+
+  /* UTILS */
+  .loading{text-align:center;padding:48px;color:var(--mid);font-size:13px;}
+  .spinner{width:24px;height:24px;border:2px solid var(--rule);border-top-color:var(--navy);border-radius:50%;animation:spin 0.8s linear infinite;margin:0 auto 12px;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .empty{text-align:center;padding:48px 24px;color:var(--mid);}
+  .empty-icon{font-size:32px;margin-bottom:12px;}
+  .empty h3{font-size:15px;font-weight:600;color:var(--ink);margin-bottom:4px;}
+  .empty p{font-size:13px;}
+  .toast{position:fixed;bottom:24px;right:24px;background:var(--ink);color:var(--white);padding:12px 20px;border-radius:8px;font-size:13px;font-weight:500;box-shadow:0 4px 16px rgba(0,0,0,0.2);opacity:0;transform:translateY(8px);transition:all 0.2s;pointer-events:none;z-index:400;}
+  .toast.show{opacity:1;transform:translateY(0);}
+  .toast.success{background:var(--teal);}
+  .toast.error{background:var(--red);}
+
+  @media(max-width:600px){
+    .form-grid{grid-template-columns:1fr;}
+    .info-grid{grid-template-columns:1fr;}
+    .app-main{padding:20px 16px 60px;}
+    .case-badges{display:none;}
+    .detail-header{flex-direction:column;}
+  }
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-logo">Hospital at Ekhaya</div>
+    <div class="login-title">Disciplinary</div>
+    <div class="login-sub">HR access only</div>
+    <button class="btn-email-toggle" onclick="toggleEmailLogin()">Sign in with email</button>
+    <div class="email-login" id="email-login">
+      <div class="field-group"><label>Email</label><input type="email" id="login-email" placeholder="your@email.com"></div>
+      <div class="field-group"><label>Password</label><input type="password" id="login-password" placeholder="••••••••"></div>
+      <button class="btn-primary" onclick="signInEmail()">Sign In</button>
+    </div>
+    <div class="login-error" id="login-error"></div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <header class="app-header">
+    <div class="app-brand">HOSPITAL AT EKHAYA <span>Disciplinary</span></div>
+    <div class="header-right">
+      <a href="index.html" class="btn-portal-link">← HR Portal</a>
+      <span class="user-name" id="user-name-display"></span>
+      <button class="btn-signout" onclick="signOut()">Sign out</button>
+    </div>
+  </header>
+
+  <nav class="tab-nav">
+    <button class="tab-btn active" onclick="showTab('list')">Case List</button>
+    <button class="tab-btn" onclick="showTab('new')">New Case</button>
+  </nav>
+
+  <main class="app-main">
+
+    <!-- CASE LIST -->
+    <div class="panel active" id="panel-list">
+      <div class="list-header">
+        <div class="list-title" id="list-title">All Cases</div>
+        <button class="btn-new-case" onclick="showTab('new')">+ New Case</button>
+      </div>
+      <div class="filter-tabs">
+        <button class="filter-tab active" onclick="setFilter('all',this)">All</button>
+        <button class="filter-tab" onclick="setFilter('misconduct',this)">Misconduct</button>
+        <button class="filter-tab" onclick="setFilter('grievance',this)">Grievance</button>
+        <button class="filter-tab" onclick="setFilter('open',this)">Open</button>
+        <button class="filter-tab" onclick="setFilter('closed',this)">Closed</button>
+        <button class="filter-tab" onclick="setFilter('ccma_referred',this)">CCMA</button>
+      </div>
+      <div id="case-list-container">
+        <div class="loading"><div class="spinner"></div>Loading cases…</div>
+      </div>
+    </div>
+
+    <!-- CASE DETAIL -->
+    <div class="panel" id="panel-detail">
+      <div class="detail-header">
+        <button class="btn-back" onclick="backToList()">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+          All cases
+        </button>
+        <div class="detail-main">
+          <div class="detail-case-ref" id="detail-case-ref">—</div>
+          <div class="detail-emp-name" id="detail-emp-name">—</div>
+          <div class="detail-meta" id="detail-meta"></div>
+        </div>
+        <div style="flex-shrink:0">
+          <button class="btn-action btn-action-primary" onclick="showAddStageModal()" id="btn-add-stage">+ Add Stage</button>
+        </div>
+      </div>
+
+      <div class="section-card">
+        <div class="section-head"><h3>Case Details</h3></div>
+        <div class="section-body"><div class="info-grid" id="case-detail-info"></div></div>
+      </div>
+
+      <div class="section-card">
+        <div class="section-head"><h3>Timeline</h3></div>
+        <div class="section-body">
+          <div class="timeline" id="case-timeline">
+            <div class="loading"><div class="spinner"></div>Loading…</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- NEW CASE -->
+    <div class="panel" id="panel-new">
+      <div class="list-header">
+        <div class="list-title">New Case</div>
+        <button class="btn-action btn-action-secondary" onclick="showTab('list')">Cancel</button>
+      </div>
+
+      <div class="section-card">
+        <div class="section-head"><h3>Case Type</h3></div>
+        <div class="section-body">
+          <div class="toggle-row">
+            <div class="toggle-btn selected" id="toggle-misconduct" onclick="setCaseType('misconduct')">⚠ Misconduct</div>
+            <div class="toggle-btn" id="toggle-grievance" onclick="setCaseType('grievance')">🤝 Grievance</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-card">
+        <div class="section-head"><h3>Employee &amp; Incident</h3></div>
+        <div class="section-body">
+          <div class="form-grid">
+            <div class="field-group"><label>Employee *</label><select id="new-employee"></select></div>
+            <div class="field-group"><label>Incident Date *</label><input type="date" id="new-incident-date"></div>
+            <div class="field-group"><label>Reported Date *</label><input type="date" id="new-reported-date"></div>
+            <div class="field-group"><label>Reported By *</label><input type="text" id="new-reported-by" placeholder="Name of person reporting"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-card" id="section-misconduct">
+        <div class="section-head"><h3>Misconduct Details</h3></div>
+        <div class="section-body">
+          <div class="form-grid">
+            <div class="field-group"><label>Category *</label>
+              <select id="new-category" onchange="onCategoryChange()"><option value="">— select category —</option></select>
+            </div>
+            <div class="field-group"><label>Offence *</label>
+              <select id="new-subcategory"><option value="">— select category first —</option></select>
+            </div>
+          </div>
+          <div id="track-notice" style="display:none"></div>
+          <div class="field-group" style="margin-top:12px"><label>Policy Reference</label>
+            <select id="new-policy-ref"><option value="">— none —</option></select>
+          </div>
+          <div class="field-group"><label>Incident Description *</label>
+            <textarea id="new-description" rows="4" placeholder="Describe the incident — include dates, times, witnesses, and what was observed"></textarea>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-card" id="section-grievance" style="display:none">
+        <div class="section-head"><h3>Grievance Details</h3></div>
+        <div class="section-body">
+          <div class="form-grid">
+            <div class="field-group"><label>Complainant</label>
+              <select id="new-complainant"><option value="">— same as employee above —</option></select>
+            </div>
+            <div class="field-group"><label>Respondent (person complained about)</label>
+              <select id="new-respondent"><option value="">— select —</option></select>
+            </div>
+          </div>
+          <div class="field-group"><label>Complaint Description *</label>
+            <textarea id="new-grievance-description" rows="4" placeholder="Describe the complaint in detail"></textarea>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;justify-content:flex-end;margin-top:8px;padding-bottom:60px">
+        <button class="btn-action btn-action-primary" onclick="saveNewCase()" id="btn-create-case" style="padding:12px 28px">Create Case</button>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- ADD STAGE MODAL -->
+<div class="modal-overlay" id="modal-stage">
+  <div class="modal-card">
+    <div class="modal-head">
+      <div class="modal-title">Add Stage</div>
+      <button class="modal-close" onclick="closeModal('modal-stage')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-field">
+        <label class="modal-label">Stage *</label>
+        <select class="modal-select" id="stage-select" onchange="onStageSelect()"><option value="">— select stage —</option></select>
+      </div>
+      <div class="modal-field">
+        <label class="modal-label">Date *</label>
+        <input type="date" class="modal-input" id="stage-date">
+      </div>
+      <div class="modal-field">
+        <label class="modal-label">Conducted By</label>
+        <input type="text" class="modal-input" id="stage-conducted-by" placeholder="HR officer / chairperson">
+      </div>
+      <div class="modal-field">
+        <label class="modal-label">Notes</label>
+        <textarea class="modal-textarea" id="stage-notes" placeholder="What happened at this stage…"></textarea>
+      </div>
+      <div class="modal-field" id="outcome-field" style="display:none">
+        <label class="modal-label">Outcome</label>
+        <select class="modal-select" id="stage-outcome"><option value="">— select outcome —</option></select>
+      </div>
+      <div class="modal-field" id="ccma-field" style="display:none">
+        <label class="modal-label">CCMA Case Number</label>
+        <input type="text" class="modal-input" id="stage-ccma-number" placeholder="e.g. GAJB123456">
+        <div class="modal-hint">⏱ Referral window: unfair dismissal 30 days · unfair labour practice 90 days</div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-action btn-action-secondary" onclick="closeModal('modal-stage')">Cancel</button>
+      <button class="btn-action btn-action-primary" id="btn-save-stage" onclick="saveStage()">Save Stage</button>
+    </div>
+  </div>
+</div>
+
+<!-- UPLOAD DOCUMENT MODAL -->
+<div class="modal-overlay" id="modal-doc">
+  <div class="modal-card">
+    <div class="modal-head">
+      <div class="modal-title" id="modal-doc-title">Upload Document</div>
+      <button class="modal-close" onclick="closeModal('modal-doc')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-field">
+        <label class="modal-label">Document Role *</label>
+        <div class="toggle-row">
+          <div class="toggle-btn selected" id="toggle-issued" onclick="setDocRole('issued')" style="font-size:12px">📄 Issued Document</div>
+          <div class="toggle-btn" id="toggle-receipt" onclick="setDocRole('receipt')" style="font-size:12px">✍ Signed Receipt</div>
+        </div>
+        <div class="modal-hint" id="doc-role-hint">The document given to the employee</div>
+      </div>
+      <div class="modal-field">
+        <label class="modal-label">Document Type *</label>
+        <select class="modal-select" id="doc-type-select"><option value="">— select type —</option></select>
+      </div>
+      <div class="modal-field">
+        <label class="modal-label">File *</label>
+        <div class="upload-drop" id="upload-drop">
+          <input type="file" id="upload-file-input" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" onchange="handleDocFile(this.files[0])">
+          <div class="upload-drop-icon">📄</div>
+          <div class="upload-drop-text" id="upload-drop-text">Drop file here or click to browse<br><small>PDF · JPG · PNG · DOC · DOCX</small></div>
+        </div>
+        <div id="upload-progress" style="display:none;margin-top:8px">
+          <div style="font-size:12px;color:var(--mid);margin-bottom:4px">Uploading…</div>
+          <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-action btn-action-secondary" onclick="closeModal('modal-doc')">Cancel</button>
+      <button class="btn-action btn-action-primary" id="btn-save-doc" onclick="saveDocument()">Save Document</button>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getAuth, signInWithEmailAndPassword, signOut as fbSignOut, onAuthStateChanged }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { getStorage, ref as sRef, uploadBytesResumable, getDownloadURL }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
+import { getFirestore, collection, doc, getDoc, getDocs, addDoc, updateDoc,
+         query, where, runTransaction }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey:            "AIzaSyBla6UBluNcWVKPSU8U30IuTSubLb7R2Kc",
+  authDomain:        "hae-vuma-92fca.firebaseapp.com",
+  projectId:         "hae-vuma-92fca",
+  storageBucket:     "hae-vuma-92fca.firebasestorage.app",
+  messagingSenderId: "1052424261313",
+  appId:             "1:1052424261313:web:a4bebe68d6f9ba14fa0e40"
+};
+
+const app     = initializeApp(firebaseConfig);
+const auth    = getAuth(app);
+const db      = getFirestore(app);
+const storage = getStorage(app);
+
+// ═══ CONSTANTS ════════════════════════════════════════════════════════════════
+
+const MISCONDUCT_CATEGORIES = {
+  'Attendance & Absenteeism': [
+    'Tardiness / Late Arrival','Absence Without Leave (AWOL)',
+    'Excessive Absenteeism','Unapproved Leave','Early Departure'
+  ],
+  'Behavioral & Conduct Violations': [
+    'Insubordination','Unprofessional Conduct',
+    'Disruptive Behavior','Inappropriate Use of Company Time'
+  ],
+  'Performance & Negligence': [
+    'Poor Performance','Negligence / Carelessness',
+    'Failure to Follow SOPs','Failure to Report an Incident'
+  ],
+  'Policy & Security Infractions': [
+    'Dress Code / Uniform Violation','IT / Security Policy Violation',
+    'Breach of Confidentiality','Misuse of Company Property'
+  ],
+  'Gross Misconduct': [
+    'Theft / Fraud','Harassment & Discrimination','Physical Violence or Threats',
+    'Safety Violations (High Risk)','Working Under the Influence','Vandalism / Wilful Damage'
+  ]
+};
+
+const STAGE_FLOWS = {
+  progressive:      ['incident_report','verbal_warning','written_warning','final_written_warning','hearing_notice','hearing','outcome','appeal','ccma_referral'],
+  gross_misconduct: ['incident_report','suspension','hearing_notice','hearing','outcome','appeal','ccma_referral'],
+  grievance:        ['complaint_filed','investigation','outcome','appeal','ccma_referral']
+};
+
+const STAGE_LABELS = {
+  incident_report:'Incident Report', verbal_warning:'Verbal Warning',
+  written_warning:'Written Warning', final_written_warning:'Final Written Warning',
+  suspension:'Suspension with Pay', hearing_notice:'Notice to Attend Hearing',
+  hearing:'Disciplinary Hearing', outcome:'Outcome', appeal:'Appeal',
+  ccma_referral:'CCMA Referral', complaint_filed:'Complaint Filed', investigation:'Investigation'
+};
+
+const DOC_CODES = [
+  {code:'IRF',label:'Incident Report Form'},
+  {code:'NTH',label:'Notice to Attend Hearing'},
+  {code:'VWR',label:'Verbal Warning Record'},
+  {code:'FWW',label:'First Written Warning (6 months)'},
+  {code:'FNW',label:'Final Written Warning (12 months)'},
+  {code:'SWP',label:'Suspension with Pay Notice'},
+  {code:'NOD',label:'Notice of Dismissal'},
+  {code:'OTL',label:'Outcome Letter — Disciplinary'},
+  {code:'OTG',label:'Outcome Letter — Grievance'},
+  {code:'NGH',label:'Notice of Grievance Hearing'},
+  {code:'CCR',label:'CCMA Correspondence'},
+  {code:'APL',label:'Appeal Notice'},
+  {code:'OTH',label:'Other'}
+];
+
+const OUTCOMES = [
+  '','No case to answer','Verbal warning issued','Written warning issued',
+  'Final written warning issued','Dismissed','Dismissed with notice',
+  'Complaint upheld','Complaint not upheld'
+];
+
+const CLOSED_OUTCOMES = ['No case to answer','Dismissed','Dismissed with notice','Complaint upheld','Complaint not upheld'];
+
+// ═══ STATE ═══════════════════════════════════════════════════════════════════
+
+let allCases        = [];
+let allEmployees    = [];
+let ppDocuments     = [];
+let currentCase     = null;
+let currentEvents   = [];
+let currentDocs     = [];
+let currentFilter   = 'all';
+let filterEmpId     = null;
+let newCaseType     = 'misconduct';
+let docUploadFile   = null;
+let docUploadRole   = 'issued';
+let docUploadStageId   = null;
+let docUploadStageName = null;
+
+// ═══ AUTH ════════════════════════════════════════════════════════════════════
+
+async function checkAccess(user) {
+  if (!user) return false;
+  try {
+    const snap = await getDoc(doc(db, 'access_control', user.uid));
+    if (!snap.exists()) return false;
+    const levels = snap.data().accessLevels || [];
+    return levels.includes('hr') || levels.includes('executive');
+  } catch(e) { console.error('Access check failed:', e); return false; }
+}
+
+window.signInEmail = async () => {
+  const email = document.getElementById('login-email').value;
+  const pass  = document.getElementById('login-password').value;
+  try { await signInWithEmailAndPassword(auth, email, pass); }
+  catch(e) { showLoginError('Invalid email or password.'); }
+};
+
+window.signOut = async () => {
+  await fbSignOut(auth);
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('app').style.display = 'none';
+};
+
+window.toggleEmailLogin = () => document.getElementById('email-login').classList.toggle('show');
+
+function showLoginError(msg) {
+  const el = document.getElementById('login-error');
+  el.textContent = msg; el.style.display = 'block';
+}
+
+onAuthStateChanged(auth, async (user) => {
+  if (user) {
+    const allowed = await checkAccess(user);
+    if (!allowed) {
+      await fbSignOut(auth);
+      showLoginError('Access not authorised. HR or Executive access required.');
+      return;
+    }
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    document.getElementById('user-name-display').textContent = user.displayName || user.email;
+    await init();
+  }
+});
+
+// ═══ INIT ════════════════════════════════════════════════════════════════════
+
+async function init() {
+  const params = new URLSearchParams(window.location.search);
+  filterEmpId = params.get('empId');
+
+  await Promise.all([loadEmployees(), loadPPDocuments()]);
+  populateNewCaseDropdowns();
+  await loadCases();
+
+  if (filterEmpId) {
+    const emp = allEmployees.find(e => e.id === filterEmpId);
+    document.getElementById('list-title').textContent = emp ? `Cases — ${emp.fullName}` : 'Cases';
+    const empSel = document.getElementById('new-employee');
+    if (empSel) empSel.value = filterEmpId;
+  }
+}
+
+// ═══ DATA ════════════════════════════════════════════════════════════════════
+
+async function loadEmployees() {
+  try {
+    const snap = await getDocs(collection(db, 'employees'));
+    allEmployees = snap.docs.map(d => ({id:d.id,...d.data()}));
+    allEmployees.sort((a,b) => (a.fullName||'').localeCompare(b.fullName||''));
+  } catch(e) { console.warn('Could not load employees:', e.message); }
+}
+
+async function loadPPDocuments() {
+  try {
+    const snap = await getDocs(collection(db, 'pp_documents'));
+    ppDocuments = snap.docs.map(d => ({id:d.id,...d.data()}));
+  } catch(e) { console.warn('Could not load P&P documents:', e.message); }
+}
+
+async function loadCases() {
+  const container = document.getElementById('case-list-container');
+  container.innerHTML = '<div class="loading"><div class="spinner"></div>Loading cases…</div>';
+  try {
+    const snap = await getDocs(collection(db, 'disciplinary_cases'));
+    allCases = snap.docs.map(d => ({id:d.id,...d.data()}));
+    allCases.sort((a,b) => (b.createdAt||'').localeCompare(a.createdAt||''));
+    renderCaseList();
+  } catch(e) {
+    container.innerHTML = `<div class="empty"><div class="empty-icon">⚠️</div><h3>Could not load cases</h3><p>${e.message}</p></div>`;
+  }
+}
+
+// ═══ CASE LIST ═══════════════════════════════════════════════════════════════
+
+window.setFilter = (filter, btn) => {
+  currentFilter = filter;
+  document.querySelectorAll('.filter-tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderCaseList();
+};
+
+function renderCaseList() {
+  let cases = filterEmpId
+    ? allCases.filter(c => c.employeeId === filterEmpId || c.complainantId === filterEmpId || c.respondentId === filterEmpId)
+    : allCases;
+  if (currentFilter === 'misconduct')    cases = cases.filter(c => c.caseType === 'misconduct');
+  if (currentFilter === 'grievance')     cases = cases.filter(c => c.caseType === 'grievance');
+  if (currentFilter === 'open')          cases = cases.filter(c => c.status === 'open');
+  if (currentFilter === 'closed')        cases = cases.filter(c => c.status === 'closed');
+  if (currentFilter === 'ccma_referred') cases = cases.filter(c => c.status === 'ccma_referred');
+
+  const container = document.getElementById('case-list-container');
+  if (!cases.length) {
+    container.innerHTML = `<div class="empty"><div class="empty-icon">📋</div><h3>No cases found</h3><p>No cases match the current filter.</p></div>`;
+    return;
+  }
+
+  const statusPill = c => {
+    if (c.status==='closed')        return `<span class="status-pill status-closed">Closed</span>`;
+    if (c.status==='ccma_referred') return `<span class="status-pill status-ccma">CCMA</span>`;
+    return `<span class="status-pill status-open">Open</span>`;
+  };
+  const trackBadge = c => {
+    if (c.caseType==='grievance')       return `<span class="badge badge-teal">Grievance</span>`;
+    if (c.track==='gross_misconduct')   return `<span class="badge badge-red">Gross Misconduct</span>`;
+    return `<span class="badge badge-amber">Misconduct</span>`;
+  };
+
+  container.innerHTML = `<div class="case-list">${cases.map(c => `
+    <div class="case-row" onclick="openCase('${c.id}')">
+      <div class="case-info">
+        <div class="case-ref">${c.caseNumber||'—'}</div>
+        <div class="case-name">${c.employeeName||'—'}</div>
+        <div class="case-meta">
+          <span>${c.misconductCategory||(c.caseType==='grievance'?'Grievance':'—')}</span>
+          ${c.misconductSubcategory?`<span>· ${c.misconductSubcategory}</span>`:''}
+          <span>· Stage: ${STAGE_LABELS[c.currentStage]||'Not started'}</span>
+          <span>· ${c.incidentDate||c.reportedDate||'—'}</span>
+        </div>
+      </div>
+      <div class="case-badges">
+        ${trackBadge(c)} ${statusPill(c)}
+        <svg width="16" height="16" fill="none" stroke="#9CA3AF" stroke-width="2" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
+      </div>
+    </div>`).join('')}</div>`;
+}
+
+// ═══ CASE DETAIL ════════════════════════════════════════════════════════════
+
+window.openCase = async (caseId) => {
+  currentCase = allCases.find(c => c.id === caseId);
+  if (!currentCase) return;
+
+  document.getElementById('detail-case-ref').textContent = currentCase.caseNumber || '—';
+  document.getElementById('detail-emp-name').textContent = currentCase.employeeName || '—';
+
+  const statusPill = currentCase.status==='closed'
+    ? `<span class="status-pill status-closed">Closed</span>`
+    : currentCase.status==='ccma_referred'
+      ? `<span class="status-pill status-ccma">CCMA Referred</span>`
+      : `<span class="status-pill status-open">Open</span>`;
+
+  const trackBadge = currentCase.track==='gross_misconduct'
+    ? `<span class="badge badge-red">Gross Misconduct</span>`
+    : currentCase.caseType==='grievance'
+      ? `<span class="badge badge-teal">Grievance</span>`
+      : `<span class="badge badge-amber">Progressive</span>`;
+
+  document.getElementById('detail-meta').innerHTML =
+    `${statusPill} ${trackBadge} <span class="badge badge-mid">${STAGE_LABELS[currentCase.currentStage]||'Not started'}</span>`;
+
+  const infoItems = currentCase.caseType === 'grievance'
+    ? [
+        ['Case Number', currentCase.caseNumber],
+        ['Complainant', currentCase.complainantName||currentCase.employeeName],
+        ['Respondent', currentCase.respondentName||'—'],
+        ['Reported Date', currentCase.reportedDate],
+        ['Reported By', currentCase.reportedBy],
+        ['Status', currentCase.status],
+        ['Current Stage', STAGE_LABELS[currentCase.currentStage]||'—'],
+        ['Outcome', currentCase.outcome||'Pending'],
+        ['Description', currentCase.description,'full']
+      ]
+    : [
+        ['Case Number', currentCase.caseNumber],
+        ['Employee', currentCase.employeeName],
+        ['Category', currentCase.misconductCategory||'—'],
+        ['Offence', currentCase.misconductSubcategory||'—'],
+        ['Incident Date', currentCase.incidentDate||'—'],
+        ['Reported By', currentCase.reportedBy||'—'],
+        ['Track', currentCase.track==='gross_misconduct'?'Gross Misconduct':'Progressive'],
+        ['Outcome', currentCase.outcome||'Pending'],
+        ['Policy Reference', currentCase.policyReference||'None'],
+        ['Description', currentCase.description||'—','full']
+      ];
+
+  document.getElementById('case-detail-info').innerHTML = infoItems.map(([label, val, cls]) =>
+    `<div class="info-item${cls?' '+cls:''}"><label>${label}</label><span>${val||'—'}</span></div>`
+  ).join('');
+
+  document.getElementById('btn-add-stage').style.display = currentCase.status==='open' ? 'inline-flex' : 'none';
+
+  showPanel('panel-detail');
+  window.scrollTo(0,0);
+
+  document.getElementById('case-timeline').innerHTML = '<div class="loading"><div class="spinner"></div>Loading…</div>';
+  await Promise.all([loadEvents(caseId), loadCaseDocs(caseId)]);
+};
+
+async function loadEvents(caseId) {
+  try {
+    const snap = await getDocs(collection(db, 'disciplinary_cases', caseId, 'events'));
+    currentEvents = snap.docs.map(d => ({id:d.id,...d.data()}));
+    currentEvents.sort((a,b) => (a.date||'').localeCompare(b.date||''));
+    renderTimeline();
+  } catch(e) {
+    document.getElementById('case-timeline').innerHTML =
+      `<div class="empty"><div class="empty-icon">⚠️</div><h3>Error</h3><p>${e.message}</p></div>`;
+  }
+}
+
+async function loadCaseDocs(caseId) {
+  try {
+    const snap = await getDocs(query(collection(db,'disciplinary_documents'), where('caseId','==',caseId)));
+    currentDocs = snap.docs.map(d => ({id:d.id,...d.data()}));
+    renderTimeline();
+  } catch(e) { console.warn('Could not load docs:', e.message); }
+}
+
+function renderTimeline() {
+  const el = document.getElementById('case-timeline');
+  if (!currentEvents.length) {
+    el.innerHTML = `<div class="empty" style="padding:24px 0"><div class="empty-icon">📋</div><h3>No stages recorded yet</h3><p>Use "Add Stage" to record the first action on this case.</p></div>`;
+    return;
+  }
+  el.innerHTML = currentEvents.map(ev => {
+    const stageDocs = currentDocs.filter(d => d.stageId === ev.id);
+    const issued  = stageDocs.find(d => d.documentRole==='issued');
+    const receipt = stageDocs.find(d => d.documentRole==='receipt');
+    const stageNameSafe = (STAGE_LABELS[ev.stage]||ev.stage).replace(/'/g, "\\'");
+    return `
+      <div class="timeline-event">
+        <div class="timeline-dot"></div>
+        <div class="timeline-card">
+          <div class="timeline-card-head">
+            <div class="timeline-stage-label">${STAGE_LABELS[ev.stage]||ev.stage}</div>
+            <div class="timeline-date">${ev.date||'—'}</div>
+          </div>
+          ${ev.conductedBy?`<div class="timeline-by">By: ${ev.conductedBy}</div>`:''}
+          ${ev.notes?`<div class="timeline-notes">${ev.notes}</div>`:''}
+          ${ev.outcome?`<span class="badge badge-navy">${ev.outcome}</span>`:''}
+          ${ev.ccmaNumber?`<div style="font-size:12px;color:var(--mid);margin-top:4px">CCMA: ${ev.ccmaNumber}</div>`:''}
+          <div class="stage-docs">
+            <div class="stage-docs-label">Documents</div>
+            <div class="doc-chips">
+              ${issued
+                ?`<a href="${issued.downloadUrl}" target="_blank" class="doc-chip doc-chip-issued">📄 ${issued.documentCode}</a>`
+                :`<span class="doc-chip doc-chip-add" onclick="openDocUpload('${ev.id}','${stageNameSafe}','issued')">+ Issued doc</span>`
+              }
+              ${receipt
+                ?`<a href="${receipt.downloadUrl}" target="_blank" class="doc-chip doc-chip-receipt">✍ Signed receipt</a>`
+                :`<span class="doc-chip doc-chip-add" onclick="openDocUpload('${ev.id}','${stageNameSafe}','receipt')">+ Signed receipt</span>`
+              }
+            </div>
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+window.backToList = () => {
+  currentCase = null; currentEvents = []; currentDocs = [];
+  showPanel('panel-list');
+  window.scrollTo(0,0);
+};
+
+// ═══ ADD STAGE ═══════════════════════════════════════════════════════════════
+
+window.showAddStageModal = () => {
+  if (!currentCase) return;
+  const flow = STAGE_FLOWS[currentCase.track] || STAGE_FLOWS.progressive;
+  const done = currentEvents.map(e => e.stage);
+  const remaining = flow.filter(s => !done.includes(s));
+
+  const stageSelect = document.getElementById('stage-select');
+  stageSelect.innerHTML = '<option value="">— select stage —</option>' +
+    remaining.map(s => `<option value="${s}">${STAGE_LABELS[s]}</option>`).join('');
+
+  document.getElementById('stage-date').value = new Date().toISOString().split('T')[0];
+  document.getElementById('stage-conducted-by').value = '';
+  document.getElementById('stage-notes').value = '';
+  document.getElementById('stage-outcome').innerHTML = '<option value="">— select outcome —</option>' +
+    OUTCOMES.filter(o=>o).map(o => `<option>${o}</option>`).join('');
+  document.getElementById('outcome-field').style.display = 'none';
+  document.getElementById('ccma-field').style.display = 'none';
+  document.getElementById('stage-ccma-number').value = '';
+  openModal('modal-stage');
+};
+
+window.onStageSelect = () => {
+  const stage = document.getElementById('stage-select').value;
+  document.getElementById('outcome-field').style.display = ['outcome','appeal'].includes(stage) ? 'block' : 'none';
+  document.getElementById('ccma-field').style.display  = stage === 'ccma_referral' ? 'block' : 'none';
+};
+
+window.saveStage = async () => {
+  const stage       = document.getElementById('stage-select').value;
+  const date        = document.getElementById('stage-date').value;
+  const conductedBy = document.getElementById('stage-conducted-by').value.trim();
+  const notes       = document.getElementById('stage-notes').value.trim();
+  const outcome     = document.getElementById('stage-outcome').value;
+  const ccmaNumber  = document.getElementById('stage-ccma-number').value.trim();
+
+  if (!stage) { showToast('Select a stage', 'error'); return; }
+  if (!date)  { showToast('Enter the date', 'error'); return; }
+
+  const btn = document.getElementById('btn-save-stage');
+  btn.disabled = true; btn.textContent = 'Saving…';
+
+  try {
+    const eventData = { stage, date, conductedBy, notes,
+      outcome: outcome||null, ccmaNumber: ccmaNumber||null,
+      createdAt: new Date().toISOString(), createdBy: auth.currentUser?.email||'unknown' };
+
+    const eventRef = await addDoc(
+      collection(db, 'disciplinary_cases', currentCase.id, 'events'), eventData);
+
+    const updates = { currentStage: stage, updatedAt: new Date().toISOString() };
+    if (outcome) updates.outcome = outcome;
+    if (stage === 'ccma_referral') {
+      updates.status = 'ccma_referred';
+      updates.ccmaReferral = true;
+      if (ccmaNumber) updates.ccmaDetails = { caseNumber: ccmaNumber, referralDate: date };
+    }
+    if (['outcome','appeal'].includes(stage) && CLOSED_OUTCOMES.includes(outcome)) {
+      updates.status = 'closed';
+    }
+
+    await updateDoc(doc(db, 'disciplinary_cases', currentCase.id), updates);
+    currentCase = {...currentCase,...updates};
+    const idx = allCases.findIndex(c => c.id === currentCase.id);
+    if (idx >= 0) allCases[idx] = {...allCases[idx],...updates};
+
+    currentEvents.push({id: eventRef.id, ...eventData});
+    currentEvents.sort((a,b) => (a.date||'').localeCompare(b.date||''));
+
+    closeModal('modal-stage');
+    renderTimeline();
+
+    // Refresh meta
+    const statusPill = currentCase.status==='closed'
+      ? `<span class="status-pill status-closed">Closed</span>`
+      : currentCase.status==='ccma_referred'
+        ? `<span class="status-pill status-ccma">CCMA Referred</span>`
+        : `<span class="status-pill status-open">Open</span>`;
+    document.getElementById('detail-meta').innerHTML =
+      `${statusPill} <span class="badge badge-mid">${STAGE_LABELS[stage]||stage}</span>`;
+    document.getElementById('btn-add-stage').style.display = currentCase.status==='open' ? 'inline-flex' : 'none';
+
+    showToast('Stage saved', 'success');
+  } catch(e) {
+    showToast('Failed: ' + e.message, 'error');
+  } finally { btn.disabled = false; btn.textContent = 'Save Stage'; }
+};
+
+// ═══ DOCUMENT UPLOAD ═════════════════════════════════════════════════════════
+
+window.openDocUpload = (stageId, stageName, role) => {
+  docUploadStageId = stageId; docUploadStageName = stageName;
+  docUploadFile = null;
+  setDocRole(role);
+  document.getElementById('modal-doc-title').textContent = `Upload — ${stageName}`;
+  document.getElementById('doc-type-select').innerHTML = '<option value="">— select type —</option>' +
+    DOC_CODES.map(d => `<option value="${d.code}">${d.code} — ${d.label}</option>`).join('');
+  document.getElementById('upload-drop-text').innerHTML = 'Drop file here or click to browse<br><small>PDF · JPG · PNG · DOC · DOCX</small>';
+  document.getElementById('upload-progress').style.display = 'none';
+  document.getElementById('upload-file-input').value = '';
+  openModal('modal-doc');
+};
+
+window.setDocRole = (role) => {
+  docUploadRole = role;
+  document.getElementById('toggle-issued').classList.toggle('selected', role==='issued');
+  document.getElementById('toggle-receipt').classList.toggle('selected', role==='receipt');
+  document.getElementById('doc-role-hint').textContent = role==='issued'
+    ? 'The document given to the employee'
+    : 'The signed copy proving the employee received it';
+};
+
+window.handleDocFile = (file) => {
+  if (!file) return;
+  docUploadFile = file;
+  document.getElementById('upload-drop-text').innerHTML = `✅ ${file.name}<br><small>Click to change</small>`;
+};
+
+window.saveDocument = async () => {
+  const docCode = document.getElementById('doc-type-select').value;
+  if (!docCode)       { showToast('Select a document type', 'error'); return; }
+  if (!docUploadFile) { showToast('Select a file', 'error'); return; }
+  if (!docUploadStageId) { showToast('No stage selected', 'error'); return; }
+
+  const btn = document.getElementById('btn-save-doc');
+  btn.disabled = true; btn.textContent = 'Uploading…';
+
+  try {
+    const empNo    = currentCase.employeeNumber || currentCase.employeeId;
+    const safeName = docUploadFile.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+    const storagePath = `disciplinary-documents/${empNo}/${currentCase.id}/${docUploadStageId}/${Date.now()}_${safeName}`;
+    const fill = document.getElementById('progress-fill');
+    document.getElementById('upload-progress').style.display = 'block';
+
+    await new Promise((resolve, reject) => {
+      const task = uploadBytesResumable(sRef(storage, storagePath), docUploadFile);
+      task.on('state_changed',
+        snap => { fill.style.width = Math.round((snap.bytesTransferred/snap.totalBytes)*100)+'%'; },
+        reject, resolve
+      );
+    });
+
+    const downloadUrl = await getDownloadURL(sRef(storage, storagePath));
+
+    await addDoc(collection(db, 'disciplinary_documents'), {
+      caseId:         currentCase.id,
+      employeeId:     currentCase.employeeId,
+      employeeNumber: currentCase.employeeNumber||'',
+      stageId:        docUploadStageId,
+      stageName:      docUploadStageName,
+      documentRole:   docUploadRole,
+      documentCode:   docCode,
+      fileName:       docUploadFile.name,
+      storagePath, downloadUrl,
+      uploadedBy:     auth.currentUser?.email||'',
+      uploadedAt:     new Date().toISOString()
+    });
+
+    // Refresh docs
+    const snap = await getDocs(query(collection(db,'disciplinary_documents'), where('caseId','==',currentCase.id)));
+    currentDocs = snap.docs.map(d => ({id:d.id,...d.data()}));
+    closeModal('modal-doc');
+    renderTimeline();
+    showToast('Document saved', 'success');
+  } catch(e) {
+    showToast('Upload failed: ' + e.message, 'error');
+  } finally { btn.disabled = false; btn.textContent = 'Save Document'; }
+};
+
+// ═══ NEW CASE ════════════════════════════════════════════════════════════════
+
+function populateNewCaseDropdowns() {
+  const empOpts = allEmployees.map(e => `<option value="${e.id}">${e.fullName} (${e.employeeNumber||'?'})</option>`).join('');
+  document.getElementById('new-employee').innerHTML = '<option value="">— select employee —</option>' + empOpts;
+  document.getElementById('new-complainant').innerHTML = '<option value="">— same as employee above —</option>' + empOpts;
+  document.getElementById('new-respondent').innerHTML  = '<option value="">— select respondent —</option>' + empOpts;
+
+  document.getElementById('new-category').innerHTML = '<option value="">— select category —</option>' +
+    Object.keys(MISCONDUCT_CATEGORIES).map(c => `<option value="${c}">${c}</option>`).join('');
+
+  const ppOpts = ppDocuments.map(d => {
+    const label = d.title || d.name || d.documentTitle || d.fileName || d.id;
+    return `<option value="${d.id}">${label}</option>`;
+  }).join('');
+  document.getElementById('new-policy-ref').innerHTML = '<option value="">— none —</option>' + ppOpts;
+
+  document.getElementById('new-reported-date').value = new Date().toISOString().split('T')[0];
+  if (filterEmpId) document.getElementById('new-employee').value = filterEmpId;
+}
+
+window.setCaseType = (type) => {
+  newCaseType = type;
+  document.getElementById('toggle-misconduct').classList.toggle('selected', type==='misconduct');
+  document.getElementById('toggle-grievance').classList.toggle('selected', type==='grievance');
+  document.getElementById('section-misconduct').style.display = type==='misconduct' ? 'block' : 'none';
+  document.getElementById('section-grievance').style.display  = type==='grievance'  ? 'block' : 'none';
+};
+
+window.onCategoryChange = () => {
+  const cat = document.getElementById('new-category').value;
+  const subSel = document.getElementById('new-subcategory');
+  const notice = document.getElementById('track-notice');
+  if (!cat) { subSel.innerHTML = '<option value="">— select category first —</option>'; notice.style.display='none'; return; }
+  subSel.innerHTML = '<option value="">— select offence —</option>' +
+    (MISCONDUCT_CATEGORIES[cat]||[]).map(s => `<option value="${s}">${s}</option>`).join('');
+  const isGross = cat === 'Gross Misconduct';
+  notice.style.display = 'block';
+  notice.className = `track-notice ${isGross ? 'track-gross' : 'track-progressive'}`;
+  notice.textContent = isGross
+    ? '⚠ Gross misconduct track — this matter may warrant immediate suspension with pay pending investigation, and possible summary dismissal after a hearing.'
+    : '↗ Progressive discipline track — follows verbal warning → written warning → hearing unless severity warrants escalation.';
+};
+
+window.saveNewCase = async () => {
+  const empId        = document.getElementById('new-employee').value;
+  const incidentDate = document.getElementById('new-incident-date').value;
+  const reportedDate = document.getElementById('new-reported-date').value;
+  const reportedBy   = document.getElementById('new-reported-by').value.trim();
+  if (!empId)       { showToast('Select an employee', 'error'); return; }
+  if (!reportedDate){ showToast('Enter the reported date', 'error'); return; }
+  if (!reportedBy)  { showToast('Enter who reported this', 'error'); return; }
+
+  const emp = allEmployees.find(e => e.id === empId);
+  let caseData = {
+    caseType: newCaseType, employeeId: empId,
+    employeeNumber: emp?.employeeNumber||'', employeeName: emp?.fullName||'',
+    incidentDate: incidentDate||reportedDate, reportedDate, reportedBy,
+    status: 'open', currentStage: null, outcome: null, ccmaReferral: false,
+    createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
+    createdBy: auth.currentUser?.email||'unknown'
+  };
+
+  if (newCaseType === 'misconduct') {
+    const category    = document.getElementById('new-category').value;
+    const subcategory = document.getElementById('new-subcategory').value;
+    const description = document.getElementById('new-description').value.trim();
+    const policyRef   = document.getElementById('new-policy-ref').value;
+    if (!category)    { showToast('Select a misconduct category', 'error'); return; }
+    if (!subcategory) { showToast('Select the specific offence', 'error'); return; }
+    if (!description) { showToast('Enter an incident description', 'error'); return; }
+    const track = category === 'Gross Misconduct' ? 'gross_misconduct' : 'progressive';
+    caseData = {...caseData, track, misconductCategory: category, misconductSubcategory: subcategory, description, policyReference: policyRef||null};
+  } else {
+    const description  = document.getElementById('new-grievance-description').value.trim();
+    const complainantId = document.getElementById('new-complainant').value || empId;
+    const respondentId  = document.getElementById('new-respondent').value;
+    if (!description) { showToast('Enter the complaint description', 'error'); return; }
+    const complainant = allEmployees.find(e => e.id === complainantId);
+    const respondent  = allEmployees.find(e => e.id === respondentId);
+    caseData = {...caseData, track:'grievance', description,
+      complainantId, complainantName: complainant?.fullName||'',
+      respondentId: respondentId||null, respondentName: respondent?.fullName||''};
+  }
+
+  const btn = document.getElementById('btn-create-case');
+  btn.disabled = true; btn.textContent = 'Creating…';
+
+  try {
+    caseData.caseNumber = await generateCaseNumber();
+    const caseRef = await addDoc(collection(db, 'disciplinary_cases'), caseData);
+    allCases.unshift({id: caseRef.id, ...caseData});
+    showToast(`Case ${caseData.caseNumber} created`, 'success');
+    resetNewCaseForm();
+    await openCase(caseRef.id);
+  } catch(e) {
+    showToast('Failed to create case: ' + e.message, 'error');
+  } finally { btn.disabled = false; btn.textContent = 'Create Case'; }
+};
+
+async function generateCaseNumber() {
+  const year = new Date().getFullYear();
+  const field = `count_${year}`;
+  const counterRef = doc(db, 'counters', 'disciplinary_hr');
+  let num;
+  await runTransaction(db, async t => {
+    const snap = await t.get(counterRef);
+    const current = snap.exists() ? (snap.data()[field]||0) : 0;
+    num = current + 1;
+    t.set(counterRef, {[field]: num}, {merge: true});
+  });
+  return `HaE/COO/HR/${year}/${String(num).padStart(3,'0')}`;
+}
+
+function resetNewCaseForm() {
+  document.getElementById('new-employee').value = filterEmpId||'';
+  document.getElementById('new-incident-date').value = '';
+  document.getElementById('new-reported-date').value = new Date().toISOString().split('T')[0];
+  document.getElementById('new-reported-by').value = '';
+  document.getElementById('new-category').value = '';
+  document.getElementById('new-subcategory').innerHTML = '<option value="">— select category first —</option>';
+  document.getElementById('new-description').value = '';
+  document.getElementById('new-grievance-description').value = '';
+  document.getElementById('track-notice').style.display = 'none';
+  setCaseType('misconduct');
+}
+
+// ═══ NAV / UTILS ════════════════════════════════════════════════════════════
+
+window.showTab = (tab) => {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  if (tab==='list') {
+    showPanel('panel-list');
+    document.querySelectorAll('.tab-btn')[0].classList.add('active');
+    renderCaseList();
+  } else if (tab==='new') {
+    showPanel('panel-new');
+    document.querySelectorAll('.tab-btn')[1].classList.add('active');
+  }
+  window.scrollTo(0,0);
+};
+
+function showPanel(id) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+window.openModal  = id => document.getElementById(id).classList.add('show');
+window.closeModal = id => document.getElementById(id).classList.remove('show');
+
+window.showToast = (msg, type='') => {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.className = `toast ${type} show`;
+  setTimeout(() => { t.className = 'toast'; }, 3500);
+};
+
+document.addEventListener('DOMContentLoaded', () => {
+  const zone = document.getElementById('upload-drop');
+  if (!zone) return;
+  zone.addEventListener('dragover',  e => { e.preventDefault(); zone.classList.add('over'); });
+  zone.addEventListener('dragleave', () => zone.classList.remove('over'));
+  zone.addEventListener('drop', e => {
+    e.preventDefault(); zone.classList.remove('over');
+    const file = e.dataTransfer.files[0]; if (file) handleDocFile(file);
+  });
+});
+</script>
+</body>
+</html>
