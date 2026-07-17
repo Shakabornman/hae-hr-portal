@@ -206,12 +206,22 @@
       <div class="doc-tabs">
         <button class="doc-tab active" onclick="switchDocTab('details', this)">Details</button>
         <button class="doc-tab" onclick="switchDocTab('documents', this)">Documents <span id="doc-count-badge" style="font-size:11px;background:var(--rule);padding:1px 6px;border-radius:8px;margin-left:4px">0</span></button>
+        <button class="doc-tab" onclick="switchDocTab('disciplinary', this)">Disciplinary <span id="disc-count-badge" style="font-size:11px;background:var(--rule);padding:1px 6px;border-radius:8px;margin-left:4px">0</span></button>
       </div>
       <div id="edit-form-body"></div>
       <div id="documents-panel" style="display:none">
         <button class="upload-btn-main" onclick="openUploadModalForCurrentEmployee()">📎 Upload Document</button>
         <div id="doc-list-container">
           <div class="loading"><div class="spinner"></div>Loading documents…</div>
+        </div>
+      </div>
+
+      <div id="disciplinary-panel" style="display:none">
+        <div id="disc-case-list-container">
+          <div class="loading"><div class="spinner"></div>Loading cases…</div>
+        </div>
+        <div style="margin-top:12px">
+          <button class="upload-btn-main" id="btn-open-disciplinary" onclick="openDisciplinaryForEmployee()">⚖ Open Disciplinary Module</button>
         </div>
       </div>
       <div style="height:70px"></div>
@@ -831,9 +841,47 @@ window.showToast = (msg, type = '') => {
 window.switchDocTab = function(tab, btn) {
   document.querySelectorAll('.doc-tab').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
-  document.getElementById('edit-form-body').style.display   = tab === 'details'   ? 'block' : 'none';
-  document.getElementById('documents-panel').style.display  = tab === 'documents' ? 'block' : 'none';
-  if (tab === 'documents' && currentDocId) loadDocuments(currentDocId);
+  document.getElementById('edit-form-body').style.display        = tab === 'details'       ? 'block' : 'none';
+  document.getElementById('documents-panel').style.display       = tab === 'documents'     ? 'block' : 'none';
+  document.getElementById('disciplinary-panel').style.display    = tab === 'disciplinary'  ? 'block' : 'none';
+  if (tab === 'documents'    && currentDocId) loadDocuments(currentDocId);
+  if (tab === 'disciplinary' && currentDocId) loadDisciplinaryCases(currentDocId);
+};
+
+async function loadDisciplinaryCases(empDocId) {
+  const container = document.getElementById('disc-case-list-container');
+  container.innerHTML = '<div class="loading"><div class="spinner"></div>Loading…</div>';
+  try {
+    const { collection: col, query: q, where: w, getDocs: gd } =
+      await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
+    const snap = await gd(q(col(db, 'disciplinary_cases'), w('employeeId', '==', empDocId)));
+    const cases = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+      .sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
+
+    document.getElementById('disc-count-badge').textContent = cases.length;
+
+    if (!cases.length) {
+      container.innerHTML = '<div class="empty"><div class="empty-icon">⚖</div><h3>No disciplinary cases</h3><p>No cases on record for this employee.</p></div>';
+      return;
+    }
+
+    const statusColour = s => s === 'closed' ? 'background:#e6f4ee;color:#1A4A35' : s === 'ccma_referred' ? 'background:#fef2f2;color:#C0392B' : 'background:#fef3c7;color:#92400E';
+    container.innerHTML = `<ul style="list-style:none">${cases.map(c => `
+      <li style="background:var(--white);border:1px solid var(--rule);border-radius:8px;padding:12px 14px;margin-bottom:8px">
+        <div style="font-size:11px;font-weight:600;color:var(--mid);letter-spacing:0.06em;margin-bottom:2px">${c.caseNumber||'—'}</div>
+        <div style="font-size:13px;font-weight:600;color:var(--ink);margin-bottom:4px">${c.misconductCategory||'Grievance'} ${c.misconductSubcategory?'· '+c.misconductSubcategory:''}</div>
+        <div style="display:flex;gap:8px;align-items:center;font-size:12px;color:var(--mid)">
+          <span>${c.incidentDate||c.reportedDate||'—'}</span>
+          <span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:3px;${statusColour(c.status)}">${c.status==='ccma_referred'?'CCMA':c.status||'open'}</span>
+        </div>
+      </li>`).join('')}</ul>`;
+  } catch(e) {
+    container.innerHTML = `<div class="empty"><div class="empty-icon">⚠️</div><h3>Error</h3><p>${e.message}</p></div>`;
+  }
+}
+
+window.openDisciplinaryForEmployee = () => {
+  if (currentDocId) window.open(`disciplinary.html?empId=${currentDocId}`, '_blank');
 };
 
 async function loadDocuments(empDocId) {
