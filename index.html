@@ -332,7 +332,6 @@
                 <label>UIF Termination Reason</label>
                 <select id="c_terminationReason">
                   <option value="">— select reason —</option>
-                  ${TERMINATION_CODES.map(t => `<option value="${t.code}. ${t.label}">${t.code}. ${t.label}</option>`).join('')}
                 </select>
               </div>
             </div>
@@ -442,7 +441,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 // payroll_admin must be assigned in shared.user_access for fetch to return data.
 // Replace SUPABASE_ANON_KEY with the anon/public key from Supabase → Project Settings → API
 const SUPABASE_URL      = "https://wgmtkvlpafqdqaordhoz.supabase.co";
-const SUPABASE_ANON_KEY = "sb_publishable_aXMevpnwGAGOkmneWYpjOQ_-ny9trqu"; // eyJ...
+const SUPABASE_ANON_KEY = "REPLACE_WITH_ANON_PUBLIC_KEY"; // eyJ...
 
 async function getSupabaseClient() {
   const idToken = await auth.currentUser.getIdToken();
@@ -1114,6 +1113,17 @@ window.openDisciplinaryForEmployee = () => {
 
 function loadEndOfService(empDocId) {
   const emp = allEmployees.find(e => e.id === empDocId) || {};
+
+  // Populate termination codes — must be done in JS, not static HTML
+  const sel = document.getElementById('c_terminationReason');
+  if (sel && sel.options.length <= 1) {
+    TERMINATION_CODES.forEach(t => {
+      const opt = document.createElement('option');
+      opt.value       = `${t.code}. ${t.label}`;
+      opt.textContent = `${t.code}. ${t.label}`;
+      sel.appendChild(opt);
+    });
+  }
   document.getElementById('c_lastDayOfService').value  = emp.lastDayOfService || '';
   document.getElementById('c_terminationReason').value = emp.terminationReason || '';
 
