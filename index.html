@@ -316,6 +316,36 @@
         <div style="display:flex;justify-content:flex-end;margin-top:8px;margin-bottom:8px;">
           <button class="btn-save" id="btn-save-classification" onclick="saveClassification()">Save classification</button>
         </div>
+
+        <div class="section-card">
+          <div class="section-head"><h3>End of Service</h3></div>
+          <div class="section-body">
+            <div style="font-size:13px;color:var(--mid);margin-bottom:16px;padding:10px 14px;background:var(--light-red);border:1px solid #FECACA;border-radius:6px;">
+              ⚠ Completing this section sets the employee as inactive. Ensure all payroll for this employee is finalised before proceeding.
+            </div>
+            <div class="form-grid">
+              <div class="field-group">
+                <label>Last Day of Service</label>
+                <input type="date" id="c_lastDayOfService">
+              </div>
+              <div class="field-group">
+                <label>UIF Termination Reason</label>
+                <select id="c_terminationReason">
+                  <option value="">— select reason —</option>
+                  ${TERMINATION_CODES.map(t => `<option value="${t.code}. ${t.label}">${t.code}. ${t.label}</option>`).join('')}
+                </select>
+              </div>
+            </div>
+            <div id="eos-saved-notice" style="display:none;margin-bottom:12px;padding:10px 14px;background:var(--light-teal);border:1px solid #A7F3D0;border-radius:6px;font-size:13px;color:var(--teal);">
+              ✓ End of Service recorded — employee marked inactive
+            </div>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:8px;">
+              <button class="btn-save" id="btn-save-eos" onclick="saveEndOfService()" style="background:var(--red);">Record End of Service</button>
+              <button class="btn-cancel" id="btn-ui19" onclick="generateUI19PDF()" style="display:none;">Download UI-19</button>
+              <button class="btn-cancel" id="btn-salary-schedule" onclick="generateSalarySchedulePDF()" style="display:none;">Download Salary Schedule</button>
+            </div>
+          </div>
+        </div>
       </div>
       <div style="height:70px"></div>
       <div class="save-bar">
@@ -396,6 +426,7 @@
   </div>
 </div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getAuth, signInWithPopup, GoogleAuthProvider, signInWithEmailAndPassword, signOut as fbSignOut, onAuthStateChanged }
@@ -404,6 +435,22 @@ import { getStorage, ref, uploadBytesResumable, getDownloadURL, deleteObject }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
 import { getFirestore, collection, getDocs, query, where, doc, updateDoc, setDoc }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+// ── SUPABASE ─────────────────────────────────────────────────────────────────
+// Authenticated with Firebase ID token — RLS enforces per-user access.
+// payroll_admin must be assigned in shared.user_access for fetch to return data.
+// Replace SUPABASE_ANON_KEY with the anon/public key from Supabase → Project Settings → API
+const SUPABASE_URL      = "https://wgmtkvlpafqdqaordhoz.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_aXMevpnwGAGOkmneWYpjOQ_-ny9trqu"; // eyJ...
+
+async function getSupabaseClient() {
+  const idToken = await auth.currentUser.getIdToken();
+  return createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    global: { headers: { Authorization: `Bearer ${idToken}` } },
+    auth:   { persistSession: false }
+  });
+}
 
 const firebaseConfig = {
   apiKey:            "AIzaSyBla6UBluNcWVKPSU8U30IuTSubLb7R2Kc",
@@ -428,6 +475,28 @@ const DOC_TYPES = [
 
 // Pay point options — single source of truth for dropdowns
 const PAY_POINTS = ['', 'H@E', 'KRC', 'Vuma', 'Other'];
+
+// UIF termination reason codes — UI-19 official codes, matches SimplePay
+const TERMINATION_CODES = [
+  { code: 2,  label: 'Deceased' },
+  { code: 3,  label: 'Retired' },
+  { code: 4,  label: 'Dismissed' },
+  { code: 5,  label: 'Contract Expired' },
+  { code: 6,  label: 'Resigned' },
+  { code: 7,  label: 'Constructive Dismissal' },
+  { code: 8,  label: 'Insolvency / Liquidation' },
+  { code: 9,  label: 'Maternity / Adoption' },
+  { code: 10, label: 'Illness / Medical Boarded' },
+  { code: 11, label: 'Retrenched / Staff Reduction' },
+  { code: 12, label: 'Transfer to another Branch' },
+  { code: 13, label: 'Absconded' },
+  { code: 14, label: 'Business Closed' },
+  { code: 15, label: 'Death of Domestic Employer' },
+  { code: 16, label: 'Voluntary Severance Package (VSP)' },
+  { code: 17, label: 'Reduced Working Time' },
+  { code: 18, label: 'Commissioning Parental' },
+  { code: 19, label: 'Parental Leave' }
+];
 
 // Pay frequency options — must match Supabase payroll.pay_frequencies.name exactly
 const PAY_FREQUENCIES = [
@@ -537,7 +606,7 @@ function renderList(employees) {
     const missing  = (emp.missingFields || []).length;
     const inactive = emp.active === false;
     const statusBadge = inactive
-      ? `<span class="badge badge-inactive">Resigned</span>`
+      ? `<span class="badge badge-inactive">${emp.terminationReason || 'Resigned'}</span>`
       : missing > 0
         ? `<span class="missing-count">⚠ ${missing} field${missing > 1 ? 's' : ''} missing</span>`
         : `<span class="badge badge-ok">Complete</span>`;
@@ -624,7 +693,11 @@ function buildEditForm(emp) {
           <div class="field-group"><label>Pay Frequency</label>${sel('payFrequency', emp.payFrequency, PAY_FREQUENCIES)}</div>
           <div class="field-group"><label>Start Date</label>${inp('startDate', emp.startDate, 'date')}</div>
           <div class="field-group"><label>End Date (resigned)</label>${inp('endDate', emp.endDate, 'date')}</div>
-          <div class="field-group"><label>Status</label>${sel('active', emp.active ? 'Active' : 'Resigned', ['Active','Resigned'])}</div>
+          <div class="field-group"><label>Status</label>${
+            emp.active === false && emp.terminationReason
+              ? `<input class="readonly-field" value="${emp.terminationReason}" readonly title="Set via End of Service tab">`
+              : sel('active', emp.active ? 'Active' : 'Resigned', ['Active','Resigned'])
+          }</div>
         </div>
       </div>
     </div>
@@ -988,6 +1061,7 @@ function loadClassification(empDocId) {
   document.getElementById('c_uifExemptionReason').value                    = emp.uifExemptionReason || '';
 
   document.getElementById('uif-reason-row').style.display = emp.uifExempt ? 'block' : 'none';
+  loadEndOfService(empDocId);
 }
 
 window.saveClassification = async () => {
@@ -1035,6 +1109,422 @@ window.saveClassification = async () => {
 window.openDisciplinaryForEmployee = () => {
   if (currentDocId) window.open(`disciplinary.html?empId=${currentDocId}`, '_blank');
 };
+
+// ── END OF SERVICE ────────────────────────────────────────────────────────────
+
+function loadEndOfService(empDocId) {
+  const emp = allEmployees.find(e => e.id === empDocId) || {};
+  document.getElementById('c_lastDayOfService').value  = emp.lastDayOfService || '';
+  document.getElementById('c_terminationReason').value = emp.terminationReason || '';
+
+  const isTerminated = emp.active === false && emp.terminationReason;
+  document.getElementById('eos-saved-notice').style.display   = isTerminated ? 'block' : 'none';
+  document.getElementById('btn-ui19').style.display            = isTerminated ? 'inline-block' : 'none';
+  document.getElementById('btn-salary-schedule').style.display = isTerminated ? 'inline-block' : 'none';
+  document.getElementById('btn-save-eos').textContent          = isTerminated ? 'Update End of Service' : 'Record End of Service';
+}
+
+window.saveEndOfService = async () => {
+  const lastDay = document.getElementById('c_lastDayOfService').value;
+  const reason  = document.getElementById('c_terminationReason').value;
+  if (!lastDay) { showToast('Enter last day of service', 'error'); return; }
+  if (!reason)  { showToast('Select a termination reason', 'error'); return; }
+
+  if (!confirm(`This will mark ${currentEmpDoc?.fullName || 'this employee'} as inactive with reason "${reason}" effective ${lastDay}. Continue?`)) return;
+
+  const btn = document.getElementById('btn-save-eos');
+  btn.disabled = true; btn.textContent = 'Saving…';
+
+  try {
+    const updates = {
+      active:            false,
+      terminationReason: reason,
+      lastDayOfService:  lastDay,
+      endDate:           lastDay,
+      updatedAt:         new Date().toISOString(),
+      updatedBy:         auth.currentUser?.email || 'unknown'
+    };
+
+    await updateDoc(doc(db, 'employees', currentDocId), updates);
+    const idx = allEmployees.findIndex(e => e.id === currentDocId);
+    if (idx >= 0) allEmployees[idx] = { ...allEmployees[idx], ...updates };
+    currentEmpDoc = { ...currentEmpDoc, ...updates };
+
+    document.getElementById('eos-saved-notice').style.display   = 'block';
+    document.getElementById('btn-ui19').style.display            = 'inline-block';
+    document.getElementById('btn-salary-schedule').style.display = 'inline-block';
+    btn.textContent = 'Update End of Service';
+    showToast('End of Service recorded', 'success');
+  } catch(e) {
+    showToast('Save failed: ' + e.message, 'error');
+  } finally {
+    btn.disabled = false;
+  }
+};
+
+// ── UI-19 PDF ─────────────────────────────────────────────────────────────────
+
+window.generateUI19PDF = () => {
+  const emp    = currentEmpDoc || {};
+  const { jsPDF } = window.jspdf;
+  const pdf    = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+  const lm     = 15; // left margin
+  const pw     = 180; // page width
+
+  // Header
+  pdf.setFillColor(30, 58, 95);
+  pdf.rect(0, 0, 210, 18, 'F');
+  pdf.setTextColor(255, 255, 255);
+  pdf.setFontSize(11);
+  pdf.setFont('helvetica', 'bold');
+  pdf.text('HOSPITAL AT EKHAYA', lm, 8);
+  pdf.setFontSize(8);
+  pdf.setFont('helvetica', 'normal');
+  pdf.text('UI-19 — Unemployment Insurance Act 63 of 2001 as amended', lm, 13);
+  pdf.text(`Generated: ${new Date().toLocaleDateString('en-ZA')}`, 195, 13, { align: 'right' });
+
+  // Title
+  pdf.setTextColor(30, 58, 95);
+  pdf.setFontSize(14);
+  pdf.setFont('helvetica', 'bold');
+  pdf.text("Employer's Declaration — Termination of Service", 105, 28, { align: 'center' });
+
+  // Section 1 — Employer details
+  let y = 36;
+  pdf.setFontSize(8);
+  pdf.setFont('helvetica', 'bold');
+  pdf.setTextColor(80, 80, 80);
+  pdf.text('1. EMPLOYER DETAILS', lm, y);
+  y += 4;
+  pdf.setDrawColor(200, 200, 200);
+  pdf.rect(lm, y, pw, 22);
+
+  const empRow = (label, val, x, yy, w) => {
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(7);
+    pdf.setTextColor(100, 100, 100);
+    pdf.text(label, x + 2, yy + 4);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setFontSize(8);
+    pdf.setTextColor(30, 30, 30);
+    pdf.text(val || '—', x + 2, yy + 9);
+  };
+
+  empRow('Trading Name', 'Hospital AT Ekhaya', lm, y, 60);
+  empRow('Physical Address', '24952 Hulana & Motopo, Galeshewe, Kimberley, 834', lm + 60, y, 80);
+  empRow('UIF Employer Reference No.', 'PLACEHOLDER — add before filing', lm + 140, y, 40);
+  y += 12;
+  empRow('Authorised Person', 'J. Jacques Bornman', lm, y, 60);
+  empRow('Phone', '082 822 6406', lm + 60, y, 40);
+  empRow('Date', new Date().toLocaleDateString('en-ZA'), lm + 100, y, 40);
+  y += 14;
+
+  // Section 2 — Employee details
+  pdf.setFont('helvetica', 'bold');
+  pdf.setFontSize(8);
+  pdf.setTextColor(80, 80, 80);
+  pdf.text('2. EMPLOYEE DETAILS', lm, y);
+  y += 4;
+
+  // Table header
+  const cols = [
+    { label: 'Surname', w: 30 },
+    { label: 'Initials', w: 14 },
+    { label: 'ID Number', w: 30 },
+    { label: 'Gross/Month', w: 26 },
+    { label: 'Hours/Month', w: 24 },
+    { label: 'Date of Appt.', w: 24 },
+    { label: 'Termination Date', w: 24 },
+    { label: 'Term. Reason', w: 18 }
+  ];
+
+  pdf.setFillColor(240, 240, 240);
+  pdf.rect(lm, y, pw, 7, 'F');
+  pdf.setDrawColor(200, 200, 200);
+  pdf.rect(lm, y, pw, 7);
+  pdf.setFont('helvetica', 'bold');
+  pdf.setFontSize(6.5);
+  pdf.setTextColor(60, 60, 60);
+  let cx = lm;
+  cols.forEach(c => {
+    pdf.text(c.label, cx + 1, y + 4.5);
+    cx += c.w;
+  });
+
+  y += 7;
+  pdf.rect(lm, y, pw, 8);
+  pdf.setFont('helvetica', 'normal');
+  pdf.setFontSize(7);
+  pdf.setTextColor(30, 30, 30);
+  cx = lm;
+  const lastName  = (emp.fullName || '').split(',')[0].trim();
+  const initials  = (emp.firstName || '').trim().charAt(0) + '.';
+  const reasonCode = (emp.terminationReason || '').split('.')[0].trim();
+  const rowVals = [
+    lastName,
+    initials,
+    emp.idNumber || '—',
+    'See Salary Schedule',
+    'See Salary Schedule',
+    emp.startDate || '—',
+    emp.lastDayOfService || '—',
+    reasonCode
+  ];
+  cols.forEach((c, i) => {
+    pdf.text(String(rowVals[i] || '—'), cx + 1, y + 5);
+    cx += c.w;
+  });
+  y += 14;
+
+  // UIF Contributor status
+  pdf.setFont('helvetica', 'bold');
+  pdf.setFontSize(8);
+  pdf.setTextColor(80, 80, 80);
+  pdf.text('3. UIF CONTRIBUTOR STATUS', lm, y);
+  y += 4;
+  pdf.setDrawColor(200, 200, 200);
+  pdf.rect(lm, y, pw, 14);
+  pdf.setFont('helvetica', 'normal');
+  pdf.setFontSize(8);
+  pdf.setTextColor(30, 30, 30);
+  const contributor    = emp.uifExempt ? 'NO' : 'YES';
+  const nonContribCode = emp.uifExemptionReason ? emp.uifExemptionReason.split(' ')[0].replace(/\D/g,'') : '—';
+  pdf.text(`Contributor: ${contributor}`, lm + 3, y + 6);
+  pdf.text(`Non-Contribution Reason Code: ${nonContribCode}`, lm + 50, y + 6);
+  if (emp.uifExemptionReason) {
+    pdf.setFontSize(7);
+    pdf.setTextColor(100, 100, 100);
+    pdf.text(emp.uifExemptionReason, lm + 3, y + 11);
+  }
+  y += 18;
+
+  // Reference codes section
+  pdf.setFont('helvetica', 'bold');
+  pdf.setFontSize(7.5);
+  pdf.setTextColor(80, 80, 80);
+  pdf.text('REASON FOR TERMINATION CODES (UI-19 reference)', lm, y);
+  y += 3;
+  pdf.setFont('helvetica', 'normal');
+  pdf.setFontSize(6.5);
+  pdf.setTextColor(100, 100, 100);
+  const codeList = '2 Deceased  3 Retired  4 Dismissed  5 Contract Expired  6 Resigned  7 Constructive Dismissal  8 Insolvency/Liquidation  9 Maternity/Adoption  10 Illness/Medical Boarded  11 Retrenched  12 Transfer  13 Absconded  14 Business Closed  15 Death of Domestic Employer  16 VSP  17 Reduced Hours  18 Commissioning Parental  19 Parental Leave';
+  const lines = pdf.splitTextToSize(codeList, pw);
+  pdf.text(lines, lm, y + 4);
+  y += lines.length * 3.5 + 8;
+
+  // Signature block
+  pdf.setDrawColor(150, 150, 150);
+  pdf.line(lm, y, lm + 70, y);
+  pdf.line(lm + 100, y, lm + 160, y);
+  pdf.setFont('helvetica', 'normal');
+  pdf.setFontSize(7);
+  pdf.setTextColor(100, 100, 100);
+  pdf.text("Employer's Signature", lm, y + 4);
+  pdf.text("Date", lm + 100, y + 4);
+
+  // Footer
+  pdf.setFillColor(245, 245, 245);
+  pdf.rect(0, 285, 210, 12, 'F');
+  pdf.setFont('helvetica', 'italic');
+  pdf.setFontSize(6.5);
+  pdf.setTextColor(130, 130, 130);
+  pdf.text('This document was generated by the HAE HR Portal. Submit to the Department of Labour UIF office or via www.labour.org.za', 105, 291, { align: 'center' });
+
+  const filename = `UI19_${lastName}_${emp.lastDayOfService || 'termination'}.pdf`;
+  pdf.save(filename);
+  showToast('UI-19 downloaded', 'success');
+};
+
+// ── SALARY SCHEDULE PDF ───────────────────────────────────────────────────────
+// Fetches remuneration and UIF deduction from Supabase payroll tables.
+// Hours column is a placeholder — confirm normal_hours reliability before building.
+// Requires payroll_admin in shared.user_access for the logged-in user.
+
+window.generateSalarySchedulePDF = async () => {
+  const emp = currentEmpDoc || {};
+  const btn = document.getElementById('btn-salary-schedule');
+  btn.disabled = true; btn.textContent = 'Fetching data…';
+
+  try {
+    const supabase = await getSupabaseClient();
+    const empNumber = (emp.employeeNumber || '').replace(/^O/i, '').replace(/\D/g, '').padStart(4, '0');
+
+    // ── Remuneration per month ─────────────────────────────────────────────
+    // payroll.payslips.gross_remuneration joined to payroll.pay_runs.pay_date
+    // TODO: confirm the employee reference column name in payroll.payslips
+    // (likely employee_number or employee_id — check payroll chat)
+    const { data: remunerationData, error: remError } = await supabase
+      .from('payslips')
+      .select('gross_remuneration, pay_runs(pay_date)')
+      .eq('employee_number', empNumber)
+      .order('pay_runs(pay_date)', { ascending: true });
+
+    if (remError) throw new Error('Remuneration fetch: ' + remError.message);
+
+    // ── UIF deduction per month ────────────────────────────────────────────
+    // payroll.payslip_lines.amount where pay_items.code = 'UIF_EE'
+    const { data: uifData, error: uifError } = await supabase
+      .from('payslip_lines')
+      .select('amount, payslips!inner(employee_number, pay_runs(pay_date)), pay_items!inner(code)')
+      .eq('payslips.employee_number', empNumber)
+      .eq('pay_items.code', 'UIF_EE')
+      .order('payslips.pay_runs.pay_date', { ascending: true });
+
+    if (uifError) throw new Error('UIF fetch: ' + uifError.message);
+
+    // ── Build period rows ──────────────────────────────────────────────────
+    const periods = (remunerationData || []).map(row => {
+      const payDate   = row.pay_runs?.pay_date || '';
+      const month     = payDate ? new Date(payDate).toLocaleDateString('en-ZA', { month: 'long', year: 'numeric' }) : '—';
+      const uifRow    = (uifData || []).find(u => u.payslips?.pay_runs?.pay_date === payDate);
+      return {
+        month,
+        remuneration: row.gross_remuneration || 0,
+        hours:        null, // placeholder — confirm normal_hours before building
+        uifDeduction: uifRow?.amount || 0
+      };
+    });
+
+    generateSalaryScheduleDoc(emp, periods);
+  } catch(e) {
+    showToast('Fetch failed: ' + e.message, 'error');
+    console.error('Salary Schedule fetch error:', e);
+  } finally {
+    btn.disabled = false; btn.textContent = 'Download Salary Schedule';
+  }
+};
+
+function generateSalaryScheduleDoc(emp, periods) {
+  const { jsPDF } = window.jspdf;
+  const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+  const lm  = 15;
+  const pw  = 180;
+
+  // Header
+  pdf.setFillColor(30, 58, 95);
+  pdf.rect(0, 0, 210, 18, 'F');
+  pdf.setTextColor(255, 255, 255);
+  pdf.setFontSize(11);
+  pdf.setFont('helvetica', 'bold');
+  pdf.text('HOSPITAL AT EKHAYA', lm, 8);
+  pdf.setFontSize(8);
+  pdf.setFont('helvetica', 'normal');
+  pdf.text('Department of Labour — Salary Schedule Form', lm, 13);
+  pdf.text(`Generated: ${new Date().toLocaleDateString('en-ZA')}`, 195, 13, { align: 'right' });
+
+  // Title
+  pdf.setTextColor(30, 58, 95);
+  pdf.setFontSize(13);
+  pdf.setFont('helvetica', 'bold');
+  pdf.text('Department of Labour Salary Schedule Form', 105, 28, { align: 'center' });
+
+  // Employee info block
+  let y = 35;
+  const infoRows = [
+    ['ID Number of Employee',         emp.idNumber || '—'],
+    ['Surname & Initials of Employee', `${(emp.fullName||'').split(',')[0].trim()}, ${(emp.firstName||'').charAt(0)}.`],
+    ['Company UIF Reference Number',  'PLACEHOLDER — add before filing'],
+    ['Company Name',                  'Hospital AT Ekhaya'],
+    ['Period of Service',             `From ${emp.startDate || '—'} to ${emp.lastDayOfService || '—'}`]
+  ];
+
+  pdf.setDrawColor(200, 200, 200);
+  infoRows.forEach(([label, val]) => {
+    pdf.rect(lm, y, 70, 8);
+    pdf.rect(lm + 70, y, pw - 70, 8);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(7);
+    pdf.setTextColor(80, 80, 80);
+    pdf.text(label, lm + 2, y + 5);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setFontSize(8);
+    pdf.setTextColor(30, 30, 30);
+    pdf.text(val, lm + 72, y + 5);
+    y += 8;
+  });
+
+  y += 6;
+
+  // Periods table
+  const colHeaders = ['From Date', 'To Date', 'Remuneration per Month', 'Total Hours / Month', 'UIF Deduction'];
+  const colWidths  = [28, 28, 50, 40, 34];
+
+  pdf.setFillColor(240, 240, 240);
+  pdf.rect(lm, y, pw, 7, 'F');
+  pdf.rect(lm, y, pw, 7);
+  pdf.setFont('helvetica', 'bold');
+  pdf.setFontSize(7);
+  pdf.setTextColor(60, 60, 60);
+  let cx = lm;
+  colHeaders.forEach((h, i) => {
+    pdf.text(h, cx + 2, y + 4.5);
+    cx += colWidths[i];
+  });
+
+  y += 7;
+  if (!periods.length) {
+    pdf.rect(lm, y, pw, 8);
+    pdf.setFont('helvetica', 'italic');
+    pdf.setFontSize(7);
+    pdf.setTextColor(150, 150, 150);
+    pdf.text('No payroll records found. Check Supabase access or employee number mapping.', lm + 2, y + 5);
+    y += 8;
+  } else {
+    periods.forEach(p => {
+      pdf.rect(lm, y, pw, 8);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(7.5);
+      pdf.setTextColor(30, 30, 30);
+      cx = lm;
+      const row = [
+        p.month, p.month,
+        `R ${Number(p.remuneration).toFixed(2)}`,
+        p.hours !== null ? String(p.hours) : '— (placeholder)',
+        `R ${Number(p.uifDeduction).toFixed(2)}`
+      ];
+      row.forEach((v, i) => {
+        pdf.text(v, cx + 2, y + 5);
+        cx += colWidths[i];
+      });
+      y += 8;
+    });
+  }
+
+  y += 12;
+
+  // Signature block
+  pdf.setFont('helvetica', 'normal');
+  pdf.setFontSize(8);
+  pdf.setTextColor(30, 30, 30);
+  pdf.text('Name & Surname: ', lm, y);
+  pdf.setDrawColor(150, 150, 150);
+  pdf.line(lm + 35, y, lm + pw, y);
+  y += 10;
+  pdf.text('Signature: ', lm, y);
+  pdf.line(lm + 25, y, lm + 80, y);
+  pdf.text('Date: ', lm + 90, y);
+  pdf.line(lm + 103, y, lm + pw, y);
+  y += 14;
+
+  pdf.setFillColor(245, 245, 245);
+  pdf.rect(lm, y, pw, 18);
+  pdf.setFont('helvetica', 'bold');
+  pdf.setFontSize(7);
+  pdf.setTextColor(100, 100, 100);
+  pdf.text('Company Stamp:', lm + 2, y + 6);
+
+  // Footer
+  pdf.setFillColor(245, 245, 245);
+  pdf.rect(0, 285, 210, 12, 'F');
+  pdf.setFont('helvetica', 'italic');
+  pdf.setFontSize(6.5);
+  pdf.setTextColor(130, 130, 130);
+  pdf.text('Generated by HAE HR Portal — Hours column pending confirmation of normal_hours field reliability across employee types', 105, 291, { align: 'center' });
+
+  const lastName = (emp.fullName || '').split(',')[0].trim();
+  pdf.save(`SalarySchedule_${lastName}_${emp.lastDayOfService || 'termination'}.pdf`);
+  showToast('Salary Schedule downloaded', 'success');
+}
 
 async function loadDocuments(empDocId) {
   const container = document.getElementById('doc-list-container');
