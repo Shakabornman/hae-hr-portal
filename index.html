@@ -977,21 +977,17 @@ async function loadDisciplinaryCases(empDocId) {
 
 function loadClassification(empDocId) {
   const emp = allEmployees.find(e => e.id === empDocId) || {};
-  const cl  = emp.classification || {};
 
-  // Checkboxes
-  document.getElementById('c_isDirector').checked               = !!cl.isDirector;
-  document.getElementById('c_isIndependentContractor').checked  = !!cl.isIndependentContractor;
-  document.getElementById('c_uifExempt').checked                = !!cl.uifExempt;
+  document.getElementById('c_isDirector').checked              = !!emp.isDirector;
+  document.getElementById('c_isIndependentContractor').checked = !!emp.isIndependentContractor;
+  document.getElementById('c_uifExempt').checked               = !!emp.uifExempt;
 
-  // Dropdowns
-  document.getElementById('c_normalWorkHoursCategory').value              = cl.normalWorkHoursCategory || '';
-  document.getElementById('c_worksLessThan24HoursMonth').value            = cl.worksLessThan24HoursMonth || '';
-  document.getElementById('c_hasWrittenDeclarationNoOtherEmployer').value = cl.hasWrittenDeclarationNoOtherEmployer || '';
-  document.getElementById('c_uifExemptionReason').value                   = cl.uifExemptionReason || '';
+  document.getElementById('c_normalWorkHoursCategory').value               = emp.normalWorkHoursCategory || '';
+  document.getElementById('c_worksLessThan24HoursMonth').value             = emp.worksLessThan24HoursMonth || '';
+  document.getElementById('c_hasWrittenDeclarationNoOtherEmployer').value  = emp.hasWrittenDeclarationNoOtherEmployer || '';
+  document.getElementById('c_uifExemptionReason').value                    = emp.uifExemptionReason || '';
 
-  // Show/hide UIF reason row
-  document.getElementById('uif-reason-row').style.display = cl.uifExempt ? 'block' : 'none';
+  document.getElementById('uif-reason-row').style.display = emp.uifExempt ? 'block' : 'none';
 }
 
 window.saveClassification = async () => {
@@ -1010,24 +1006,23 @@ window.saveClassification = async () => {
       return;
     }
 
-    const classification = {
-      isDirector:                         cb('c_isDirector'),
-      isIndependentContractor:            cb('c_isIndependentContractor'),
+    // Flat fields on the employee document — read directly by the Supabase sync function
+    const updates = {
+      isDirector:                           cb('c_isDirector'),
+      isIndependentContractor:              cb('c_isIndependentContractor'),
       uifExempt,
-      uifExemptionReason:                 uifExempt ? sel('c_uifExemptionReason') : '',
-      normalWorkHoursCategory:            sel('c_normalWorkHoursCategory'),
-      worksLessThan24HoursMonth:          sel('c_worksLessThan24HoursMonth'),
+      uifExemptionReason:                   uifExempt ? sel('c_uifExemptionReason') : '',
+      normalWorkHoursCategory:              sel('c_normalWorkHoursCategory'),
+      worksLessThan24HoursMonth:            sel('c_worksLessThan24HoursMonth'),
       hasWrittenDeclarationNoOtherEmployer: sel('c_hasWrittenDeclarationNoOtherEmployer'),
-    };
-
-    await updateDoc(doc(db, 'employees', currentDocId), {
-      classification,
       updatedAt: new Date().toISOString(),
       updatedBy: auth.currentUser?.email || 'unknown'
-    });
+    };
+
+    await updateDoc(doc(db, 'employees', currentDocId), updates);
 
     const idx = allEmployees.findIndex(e => e.id === currentDocId);
-    if (idx >= 0) allEmployees[idx] = { ...allEmployees[idx], classification };
+    if (idx >= 0) allEmployees[idx] = { ...allEmployees[idx], ...updates };
 
     showToast('Classification saved', 'success');
   } catch(e) {
