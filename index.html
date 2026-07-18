@@ -207,6 +207,7 @@
         <button class="doc-tab active" onclick="switchDocTab('details', this)">Details</button>
         <button class="doc-tab" onclick="switchDocTab('documents', this)">Documents <span id="doc-count-badge" style="font-size:11px;background:var(--rule);padding:1px 6px;border-radius:8px;margin-left:4px">0</span></button>
         <button class="doc-tab" onclick="switchDocTab('disciplinary', this)">Disciplinary <span id="disc-count-badge" style="font-size:11px;background:var(--rule);padding:1px 6px;border-radius:8px;margin-left:4px">0</span></button>
+        <button class="doc-tab" onclick="switchDocTab('classification', this)">Classification</button>
       </div>
       <div id="edit-form-body"></div>
       <div id="documents-panel" style="display:none">
@@ -222,6 +223,98 @@
         </div>
         <div style="margin-top:12px">
           <button class="upload-btn-main" id="btn-open-disciplinary" onclick="openDisciplinaryForEmployee()">⚖ Open Disciplinary Module</button>
+        </div>
+      </div>
+
+      <div id="classification-panel" style="display:none">
+        <div style="font-size:13px;color:var(--mid);margin-bottom:20px;padding:10px 14px;background:var(--light-teal);border:1px solid #A7F3D0;border-radius:6px;">
+          These fields help HAE Pay perform the correct calculations for this employee. They must match SimplePay exactly.
+        </div>
+
+        <div class="section-card">
+          <div class="section-head"><h3>Director &amp; Contractor Status</h3></div>
+          <div class="section-body">
+            <div class="form-grid">
+              <div class="field-group">
+                <label style="display:flex;align-items:center;gap:10px;text-transform:none;font-size:13px;font-weight:500;cursor:pointer;">
+                  <input type="checkbox" id="c_isDirector" style="width:16px;height:16px;accent-color:var(--navy);flex-shrink:0;">
+                  Director
+                </label>
+                <div style="font-size:11px;color:var(--mid);margin-top:4px;margin-left:26px;">Employee holds a director position</div>
+              </div>
+              <div class="field-group">
+                <label style="display:flex;align-items:center;gap:10px;text-transform:none;font-size:13px;font-weight:500;cursor:pointer;">
+                  <input type="checkbox" id="c_isIndependentContractor" style="width:16px;height:16px;accent-color:var(--navy);flex-shrink:0;">
+                  Independent Contractor
+                </label>
+                <div style="font-size:11px;color:var(--mid);margin-top:4px;margin-left:26px;">Not a permanent or fixed-term employee</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="section-card">
+          <div class="section-head"><h3>Work Hours</h3></div>
+          <div class="section-body">
+            <div class="form-grid">
+              <div class="field-group">
+                <label>When does the employee normally work?</label>
+                <select id="c_normalWorkHoursCategory">
+                  <option value="">— select —</option>
+                  <option value="Full time">Full time</option>
+                  <option value="Less than 22 hours per week">Less than 22 hours per week</option>
+                </select>
+              </div>
+              <div class="field-group">
+                <label>Does the employee work less than 24 hours a month?</label>
+                <select id="c_worksLessThan24HoursMonth">
+                  <option value="">— select —</option>
+                  <option value="Yes">Yes</option>
+                  <option value="No">No</option>
+                </select>
+              </div>
+              <div class="field-group full">
+                <label>Written declaration — employee will not work for another employer while employed here</label>
+                <select id="c_hasWrittenDeclarationNoOtherEmployer" style="max-width:200px">
+                  <option value="">— select —</option>
+                  <option value="Yes">Yes</option>
+                  <option value="No">No</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="section-card">
+          <div class="section-head"><h3>UIF Status</h3></div>
+          <div class="section-body">
+            <div class="field-group">
+              <label style="display:flex;align-items:center;gap:10px;text-transform:none;font-size:13px;font-weight:500;cursor:pointer;">
+                <input type="checkbox" id="c_uifExempt" style="width:16px;height:16px;accent-color:var(--navy);flex-shrink:0;"
+                  onchange="document.getElementById('uif-reason-row').style.display=this.checked?'block':'none'">
+                UIF Exempt
+              </label>
+              <div style="font-size:11px;color:var(--mid);margin-top:4px;margin-left:26px;">This employee is exempt from UIF contributions</div>
+            </div>
+            <div id="uif-reason-row" style="display:none;margin-top:12px;padding:14px;background:var(--light-amber, #FEF3C7);border:1px solid #FCD34D;border-radius:8px;">
+              <div class="field-group" style="margin-bottom:0">
+                <label>UIF Exemption Reason <span style="color:var(--red)">*</span></label>
+                <select id="c_uifExemptionReason">
+                  <option value="">— select —</option>
+                  <option value="Works less than 24 hours per month">Works less than 24 hours per month</option>
+                  <option value="Learner in terms of the SDL act - Not UIF exempt from 1 March 2018, but still SDL exempt">Learner in terms of the SDL act — Not UIF exempt from 1 March 2018, but still SDL exempt</option>
+                  <option value="Foreigner, leaving RSA at end of service - not applicable from 1 March 2018">Foreigner, leaving RSA at end of service — not applicable from 1 March 2018</option>
+                  <option value="Earns commission only">Earns commission only</option>
+                  <option value="Income from pension, superannuation or retiring allowance only (also SDL exempt)">Income from pension, superannuation or retiring allowance only (also SDL exempt)</option>
+                  <option value="Public Servant">Public Servant</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style="display:flex;justify-content:flex-end;margin-top:8px;margin-bottom:8px;">
+          <button class="btn-save" id="btn-save-classification" onclick="saveClassification()">Save classification</button>
         </div>
       </div>
       <div style="height:70px"></div>
@@ -841,11 +934,13 @@ window.showToast = (msg, type = '') => {
 window.switchDocTab = function(tab, btn) {
   document.querySelectorAll('.doc-tab').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
-  document.getElementById('edit-form-body').style.display        = tab === 'details'       ? 'block' : 'none';
-  document.getElementById('documents-panel').style.display       = tab === 'documents'     ? 'block' : 'none';
-  document.getElementById('disciplinary-panel').style.display    = tab === 'disciplinary'  ? 'block' : 'none';
+  document.getElementById('edit-form-body').style.display        = tab === 'details'        ? 'block' : 'none';
+  document.getElementById('documents-panel').style.display       = tab === 'documents'      ? 'block' : 'none';
+  document.getElementById('disciplinary-panel').style.display    = tab === 'disciplinary'   ? 'block' : 'none';
+  document.getElementById('classification-panel').style.display  = tab === 'classification' ? 'block' : 'none';
   if (tab === 'documents'    && currentDocId) loadDocuments(currentDocId);
   if (tab === 'disciplinary' && currentDocId) loadDisciplinaryCases(currentDocId);
+  if (tab === 'classification' && currentDocId) loadClassification(currentDocId);
 };
 
 async function loadDisciplinaryCases(empDocId) {
@@ -879,6 +974,68 @@ async function loadDisciplinaryCases(empDocId) {
     container.innerHTML = `<div class="empty"><div class="empty-icon">⚠️</div><h3>Error</h3><p>${e.message}</p></div>`;
   }
 }
+
+function loadClassification(empDocId) {
+  const emp = allEmployees.find(e => e.id === empDocId) || {};
+  const cl  = emp.classification || {};
+
+  // Checkboxes
+  document.getElementById('c_isDirector').checked               = !!cl.isDirector;
+  document.getElementById('c_isIndependentContractor').checked  = !!cl.isIndependentContractor;
+  document.getElementById('c_uifExempt').checked                = !!cl.uifExempt;
+
+  // Dropdowns
+  document.getElementById('c_normalWorkHoursCategory').value              = cl.normalWorkHoursCategory || '';
+  document.getElementById('c_worksLessThan24HoursMonth').value            = cl.worksLessThan24HoursMonth || '';
+  document.getElementById('c_hasWrittenDeclarationNoOtherEmployer').value = cl.hasWrittenDeclarationNoOtherEmployer || '';
+  document.getElementById('c_uifExemptionReason').value                   = cl.uifExemptionReason || '';
+
+  // Show/hide UIF reason row
+  document.getElementById('uif-reason-row').style.display = cl.uifExempt ? 'block' : 'none';
+}
+
+window.saveClassification = async () => {
+  if (!currentDocId) return;
+  const btn = document.getElementById('btn-save-classification');
+  btn.disabled = true; btn.textContent = 'Saving…';
+
+  try {
+    const cb  = id => document.getElementById(id).checked;
+    const sel = id => document.getElementById(id).value;
+
+    const uifExempt = cb('c_uifExempt');
+    if (uifExempt && !sel('c_uifExemptionReason')) {
+      showToast('Select a UIF exemption reason', 'error');
+      btn.disabled = false; btn.textContent = 'Save classification';
+      return;
+    }
+
+    const classification = {
+      isDirector:                         cb('c_isDirector'),
+      isIndependentContractor:            cb('c_isIndependentContractor'),
+      uifExempt,
+      uifExemptionReason:                 uifExempt ? sel('c_uifExemptionReason') : '',
+      normalWorkHoursCategory:            sel('c_normalWorkHoursCategory'),
+      worksLessThan24HoursMonth:          sel('c_worksLessThan24HoursMonth'),
+      hasWrittenDeclarationNoOtherEmployer: sel('c_hasWrittenDeclarationNoOtherEmployer'),
+    };
+
+    await updateDoc(doc(db, 'employees', currentDocId), {
+      classification,
+      updatedAt: new Date().toISOString(),
+      updatedBy: auth.currentUser?.email || 'unknown'
+    });
+
+    const idx = allEmployees.findIndex(e => e.id === currentDocId);
+    if (idx >= 0) allEmployees[idx] = { ...allEmployees[idx], classification };
+
+    showToast('Classification saved', 'success');
+  } catch(e) {
+    showToast('Save failed: ' + e.message, 'error');
+  } finally {
+    btn.disabled = false; btn.textContent = 'Save classification';
+  }
+};
 
 window.openDisciplinaryForEmployee = () => {
   if (currentDocId) window.open(`disciplinary.html?empId=${currentDocId}`, '_blank');
