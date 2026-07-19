@@ -1364,8 +1364,7 @@ window.generateSalarySchedulePDF = async () => {
       .schema('payroll')
       .from('payslips')
       .select('gross_remuneration, pay_runs(pay_date)')
-      .eq('employee_number', empNumber)
-      .order('pay_runs(pay_date)', { ascending: true });
+      .eq('employee_number', empNumber);
 
     if (remError) throw new Error('Remuneration fetch: ' + remError.message);
 
@@ -1375,10 +1374,15 @@ window.generateSalarySchedulePDF = async () => {
       .from('payslip_lines')
       .select('amount, payslips!inner(employee_number, pay_runs(pay_date)), pay_items!inner(code)')
       .eq('payslips.employee_number', empNumber)
-      .eq('pay_items.code', 'UIF_EE')
-      .order('payslips.pay_runs.pay_date', { ascending: true });
+      .eq('pay_items.code', 'UIF_EE');
 
     if (uifError) throw new Error('UIF fetch: ' + uifError.message);
+
+    // Sort both client-side by pay date ascending
+    if (remunerationData) {
+      remunerationData.sort((a, b) =>
+        (a.pay_runs?.pay_date || '').localeCompare(b.pay_runs?.pay_date || ''));
+    }
 
     // ── Build period rows ──────────────────────────────────────────────────
     const periods = (remunerationData || []).map(row => {
