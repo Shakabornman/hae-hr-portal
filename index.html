@@ -434,14 +434,14 @@ import { getStorage, ref, uploadBytesResumable, getDownloadURL, deleteObject }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
 import { getFirestore, collection, getDocs, query, where, doc, updateDoc, setDoc }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.50.0";
 
 // ── SUPABASE ─────────────────────────────────────────────────────────────────
 // Authenticated with Firebase ID token — RLS enforces per-user access.
 // payroll_admin must be assigned in shared.user_access for fetch to return data.
 // Replace SUPABASE_ANON_KEY with the anon/public key from Supabase → Project Settings → API
 const SUPABASE_URL      = "https://wgmtkvlpafqdqaordhoz.supabase.co";
-const SUPABASE_ANON_KEY = "sb_publishable_aXMevpnwGAGOkmneWYpjOQ_-ny9trqu"; // eyJ...
+const SUPABASE_ANON_KEY = "sb_publishable_aXMevpnwGAGOkmneWYpjOQ_-ny9trqu";
 
 async function getSupabaseClient() {
   const idToken = await auth.currentUser.getIdToken();
@@ -1360,10 +1360,8 @@ window.generateSalarySchedulePDF = async () => {
     const empNumber = (emp.employeeNumber || '').replace(/^O/i, '').replace(/\D/g, '').padStart(4, '0');
 
     // ── Remuneration per month ─────────────────────────────────────────────
-    // payroll.payslips.gross_remuneration joined to payroll.pay_runs.pay_date
-    // TODO: confirm the employee reference column name in payroll.payslips
-    // (likely employee_number or employee_id — check payroll chat)
     const { data: remunerationData, error: remError } = await supabase
+      .schema('payroll')
       .from('payslips')
       .select('gross_remuneration, pay_runs(pay_date)')
       .eq('employee_number', empNumber)
@@ -1372,8 +1370,8 @@ window.generateSalarySchedulePDF = async () => {
     if (remError) throw new Error('Remuneration fetch: ' + remError.message);
 
     // ── UIF deduction per month ────────────────────────────────────────────
-    // payroll.payslip_lines.amount where pay_items.code = 'UIF_EE'
     const { data: uifData, error: uifError } = await supabase
+      .schema('payroll')
       .from('payslip_lines')
       .select('amount, payslips!inner(employee_number, pay_runs(pay_date)), pay_items!inner(code)')
       .eq('payslips.employee_number', empNumber)
