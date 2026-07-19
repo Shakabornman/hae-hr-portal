@@ -1360,6 +1360,7 @@ window.generateSalarySchedulePDF = async () => {
     const empNumber = (emp.employeeNumber || '').replace(/^O/i, '').replace(/\D/g, '').padStart(4, '0');
 
     // ── Remuneration per month ─────────────────────────────────────────────
+    // payslips → pay_runs via pay_run_id
     const { data: remunerationData, error: remError } = await supabase
       .schema('payroll')
       .from('payslips')
@@ -1369,16 +1370,18 @@ window.generateSalarySchedulePDF = async () => {
     if (remError) throw new Error('Remuneration fetch: ' + remError.message);
 
     // ── UIF deduction per month ────────────────────────────────────────────
+    // payslip_lines → pay_runs via pay_run_id, → pay_items via pay_item_id
+    // No relationship to payslips — both are independent children of pay_runs
     const { data: uifData, error: uifError } = await supabase
       .schema('payroll')
       .from('payslip_lines')
-      .select('amount, payslips!inner(employee_number, pay_runs(pay_date)), pay_items!inner(code)')
-      .eq('payslips.employee_number', empNumber)
+      .select('amount, pay_runs(pay_date), pay_items!inner(code)')
+      .eq('employee_number', empNumber)
       .eq('pay_items.code', 'UIF_EE');
 
     if (uifError) throw new Error('UIF fetch: ' + uifError.message);
 
-    // Sort both client-side by pay date ascending
+    // Sort remuneration client-side by pay date ascending
     if (remunerationData) {
       remunerationData.sort((a, b) =>
         (a.pay_runs?.pay_date || '').localeCompare(b.pay_runs?.pay_date || ''));
@@ -1388,7 +1391,7 @@ window.generateSalarySchedulePDF = async () => {
     const periods = (remunerationData || []).map(row => {
       const payDate   = row.pay_runs?.pay_date || '';
       const month     = payDate ? new Date(payDate).toLocaleDateString('en-ZA', { month: 'long', year: 'numeric' }) : '—';
-      const uifRow    = (uifData || []).find(u => u.payslips?.pay_runs?.pay_date === payDate);
+      const uifRow    = (uifData || []).find(u => u.pay_runs?.pay_date === payDate);
       return {
         month,
         remuneration: row.gross_remuneration || 0,
