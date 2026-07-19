@@ -313,10 +313,6 @@
           </div>
         </div>
 
-        <div style="display:flex;justify-content:flex-end;margin-top:8px;margin-bottom:8px;">
-          <button class="btn-save" id="btn-save-classification" onclick="saveClassification()">Save classification</button>
-        </div>
-
         <div class="section-card">
           <div class="section-head"><h3>End of Service</h3></div>
           <div class="section-body">
@@ -840,6 +836,21 @@ window.saveEmployee = async () => {
     await updateDoc(doc(db, 'employees', currentDocId), updates);
     const idx = allEmployees.findIndex(e => e.id === currentDocId);
     if (idx >= 0) allEmployees[idx] = { ...allEmployees[idx], ...updates };
+
+    // Classification fields — always save alongside main fields
+    const uifExempt = document.getElementById('c_uifExempt')?.checked ?? false;
+    const classFields = {
+      isDirector:                           document.getElementById('c_isDirector')?.checked ?? false,
+      isIndependentContractor:              document.getElementById('c_isIndependentContractor')?.checked ?? false,
+      uifExempt,
+      uifExemptionReason:                   uifExempt ? (document.getElementById('c_uifExemptionReason')?.value || '') : '',
+      normalWorkHoursCategory:              document.getElementById('c_normalWorkHoursCategory')?.value || '',
+      worksLessThan24HoursMonth:            document.getElementById('c_worksLessThan24HoursMonth')?.value || '',
+      hasWrittenDeclarationNoOtherEmployer: document.getElementById('c_hasWrittenDeclarationNoOtherEmployer')?.value || '',
+    };
+    await updateDoc(doc(db, 'employees', currentDocId), classFields);
+    if (idx >= 0) allEmployees[idx] = { ...allEmployees[idx], ...classFields };
+
     showToast('Record saved', 'success');
     setTimeout(() => backToList(), 800);
   } catch(e) {
@@ -1062,48 +1073,6 @@ function loadClassification(empDocId) {
   document.getElementById('uif-reason-row').style.display = emp.uifExempt ? 'block' : 'none';
   loadEndOfService(empDocId);
 }
-
-window.saveClassification = async () => {
-  if (!currentDocId) return;
-  const btn = document.getElementById('btn-save-classification');
-  btn.disabled = true; btn.textContent = 'Saving…';
-
-  try {
-    const cb  = id => document.getElementById(id).checked;
-    const sel = id => document.getElementById(id).value;
-
-    const uifExempt = cb('c_uifExempt');
-    if (uifExempt && !sel('c_uifExemptionReason')) {
-      showToast('Select a UIF exemption reason', 'error');
-      btn.disabled = false; btn.textContent = 'Save classification';
-      return;
-    }
-
-    // Flat fields on the employee document — read directly by the Supabase sync function
-    const updates = {
-      isDirector:                           cb('c_isDirector'),
-      isIndependentContractor:              cb('c_isIndependentContractor'),
-      uifExempt,
-      uifExemptionReason:                   uifExempt ? sel('c_uifExemptionReason') : '',
-      normalWorkHoursCategory:              sel('c_normalWorkHoursCategory'),
-      worksLessThan24HoursMonth:            sel('c_worksLessThan24HoursMonth'),
-      hasWrittenDeclarationNoOtherEmployer: sel('c_hasWrittenDeclarationNoOtherEmployer'),
-      updatedAt: new Date().toISOString(),
-      updatedBy: auth.currentUser?.email || 'unknown'
-    };
-
-    await updateDoc(doc(db, 'employees', currentDocId), updates);
-
-    const idx = allEmployees.findIndex(e => e.id === currentDocId);
-    if (idx >= 0) allEmployees[idx] = { ...allEmployees[idx], ...updates };
-
-    showToast('Classification saved', 'success');
-  } catch(e) {
-    showToast('Save failed: ' + e.message, 'error');
-  } finally {
-    btn.disabled = false; btn.textContent = 'Save classification';
-  }
-};
 
 window.openDisciplinaryForEmployee = () => {
   if (currentDocId) window.open(`disciplinary.html?empId=${currentDocId}`, '_blank');
