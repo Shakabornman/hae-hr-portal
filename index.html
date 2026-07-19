@@ -1173,176 +1173,276 @@ window.saveEndOfService = async () => {
 };
 
 // ── UI-19 PDF ─────────────────────────────────────────────────────────────────
+// Layout matches SimplePay termination certificate — approved payroll system format.
+// Header logos are text placeholders — provide image files to embed them.
 
-window.generateUI19PDF = () => {
-  const emp    = currentEmpDoc || {};
-  const { jsPDF } = window.jspdf;
-  const pdf    = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-  const lm     = 15; // left margin
-  const pw     = 180; // page width
+window.generateUI19PDF = async () => {
+  const emp = currentEmpDoc || {};
+  const btn = document.getElementById('btn-ui19');
+  btn.disabled = true; btn.textContent = 'Generating…';
 
-  // Header
-  pdf.setFillColor(30, 58, 95);
-  pdf.rect(0, 0, 210, 18, 'F');
-  pdf.setTextColor(255, 255, 255);
-  pdf.setFontSize(11);
-  pdf.setFont('helvetica', 'bold');
-  pdf.text('HOSPITAL AT EKHAYA', lm, 8);
-  pdf.setFontSize(8);
-  pdf.setFont('helvetica', 'normal');
-  pdf.text('UI-19 — Unemployment Insurance Act 63 of 2001 as amended', lm, 13);
-  pdf.text(`Generated: ${new Date().toLocaleDateString('en-ZA')}`, 195, 13, { align: 'right' });
+  try {
+    // Fetch last period gross remuneration from Supabase
+    let lastGross = null;
+    try {
+      const supabase  = await getSupabaseClient();
+      const empNumber = (emp.employeeNumber || '').replace(/^O/i, '').replace(/\D/g, '').padStart(4, '0');
+      const termMonth = (emp.lastDayOfService || '').substring(0, 7);
+      const { data }  = await supabase.schema('payroll').from('payslips')
+        .select('gross_remuneration, pay_runs(pay_date)').eq('employee_number', empNumber);
+      if (data && data.length) {
+        data.sort((a,b) => (b.pay_runs?.pay_date||'').localeCompare(a.pay_runs?.pay_date||''));
+        const match = data.find(d => (d.pay_runs?.pay_date||'').startsWith(termMonth)) || data[0];
+        lastGross = match?.gross_remuneration ?? null;
+      }
+    } catch(e) { console.warn('UI-19 remuneration fetch skipped:', e.message); }
 
-  // Title
-  pdf.setTextColor(30, 58, 95);
-  pdf.setFontSize(14);
-  pdf.setFont('helvetica', 'bold');
-  pdf.text("Employer's Declaration — Termination of Service", 105, 28, { align: 'center' });
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+    const PW = 210; const PH = 297; const LM = 10; const RM = 10; const CW = 190;
 
-  // Section 1 — Employer details
-  let y = 36;
-  pdf.setFontSize(8);
-  pdf.setFont('helvetica', 'bold');
-  pdf.setTextColor(80, 80, 80);
-  pdf.text('1. EMPLOYER DETAILS', lm, y);
-  y += 4;
-  pdf.setDrawColor(200, 200, 200);
-  pdf.rect(lm, y, pw, 22);
+    const termDate = emp.lastDayOfService ? new Date(emp.lastDayOfService + 'T00:00:00') : new Date();
+    const monthYear = termDate.toLocaleDateString('en-ZA', { month: 'long', year: 'numeric' });
+    const genDate   = new Date().toLocaleDateString('en-ZA', { day: '2-digit', month: 'short', year: 'numeric' });
+    const fmtDate   = s => {
+      if (!s) return '';
+      const d = new Date(s + 'T00:00:00');
+      return String(d.getDate()).padStart(2,'0') + '/' + String(d.getMonth()+1).padStart(2,'0') + '/' + String(d.getFullYear()).slice(2);
+    };
 
-  const empRow = (label, val, x, yy, w) => {
-    pdf.setFont('helvetica', 'bold');
-    pdf.setFontSize(7);
-    pdf.setTextColor(100, 100, 100);
-    pdf.text(label, x + 2, yy + 4);
-    pdf.setFont('helvetica', 'normal');
-    pdf.setFontSize(8);
-    pdf.setTextColor(30, 30, 30);
-    pdf.text(val || '—', x + 2, yy + 9);
-  };
+    let y = LM;
 
-  empRow('Trading Name', 'Hospital AT Ekhaya', lm, y, 60);
-  empRow('Physical Address', '24952 Hulana & Motopo, Galeshewe, Kimberley, 834', lm + 60, y, 80);
-  empRow('UIF Employer Reference No.', 'PLACEHOLDER — add before filing', lm + 140, y, 40);
-  y += 12;
-  empRow('Authorised Person', 'J. Jacques Bornman', lm, y, 60);
-  empRow('Phone', '082 822 6406', lm + 60, y, 40);
-  empRow('Date', new Date().toLocaleDateString('en-ZA'), lm + 100, y, 40);
-  y += 14;
+    // ── HEADER ────────────────────────────────────────────────────────────────
+    pdf.setFont('helvetica','bold'); pdf.setFontSize(7); pdf.setTextColor(0,120,0);
+    pdf.text('employment & labour', LM, y+5);
+    pdf.setFont('helvetica','normal'); pdf.setFontSize(5.5); pdf.setTextColor(50,50,50);
+    pdf.text('Department:', LM, y+9); pdf.text('Labour', LM, y+12.5);
+    pdf.text('REPUBLIC OF SOUTH AFRICA', LM, y+16);
 
-  // Section 2 — Employee details
-  pdf.setFont('helvetica', 'bold');
-  pdf.setFontSize(8);
-  pdf.setTextColor(80, 80, 80);
-  pdf.text('2. EMPLOYEE DETAILS', lm, y);
-  y += 4;
+    pdf.setFont('helvetica','bold'); pdf.setFontSize(28); pdf.setTextColor(0,0,0);
+    pdf.text('UI-19', PW/2, y+15, { align:'center' });
 
-  // Table header
-  const cols = [
-    { label: 'Surname', w: 30 },
-    { label: 'Initials', w: 14 },
-    { label: 'ID Number', w: 30 },
-    { label: 'Gross/Month', w: 26 },
-    { label: 'Hours/Month', w: 24 },
-    { label: 'Date of Appt.', w: 24 },
-    { label: 'Termination Date', w: 24 },
-    { label: 'Term. Reason', w: 18 }
-  ];
+    pdf.setFont('helvetica','bold'); pdf.setFontSize(9); pdf.setTextColor(0,80,160);
+    pdf.text('UIF', PW-RM-6, y+9, { align:'right' });
+    pdf.setFont('helvetica','normal'); pdf.setFontSize(5.5); pdf.setTextColor(80,80,80);
+    pdf.text('working for you', PW-RM-2, y+14, { align:'right' });
+    y += 20;
 
-  pdf.setFillColor(240, 240, 240);
-  pdf.rect(lm, y, pw, 7, 'F');
-  pdf.setDrawColor(200, 200, 200);
-  pdf.rect(lm, y, pw, 7);
-  pdf.setFont('helvetica', 'bold');
-  pdf.setFontSize(6.5);
-  pdf.setTextColor(60, 60, 60);
-  let cx = lm;
-  cols.forEach(c => {
-    pdf.text(c.label, cx + 1, y + 4.5);
-    cx += c.w;
-  });
+    // ── SUBTITLE ──────────────────────────────────────────────────────────────
+    pdf.setDrawColor(180,180,180); pdf.setLineWidth(0.3);
+    pdf.line(LM, y, PW-RM, y); y += 2;
+    pdf.setFont('helvetica','bold'); pdf.setFontSize(8); pdf.setTextColor(0,0,0);
+    pdf.text('UNEMPLOYMENT INSURANCE Act 63 of 2001 as amended', LM, y+4);
+    pdf.text(monthYear, PW-RM, y+4, { align:'right' }); y += 6;
+    pdf.setFont('helvetica','normal'); pdf.setFontSize(6.5);
+    pdf.text("Employer's Declaration of Employees for the month", LM, y); y += 4;
+    pdf.setFontSize(6);
+    pdf.text('Information to be submitted in terms of Section 56 (1&3) read with Regulation 13 (1&2)', LM, y);
+    y += 3; pdf.line(LM, y, PW-RM, y); y += 2;
 
-  y += 7;
-  pdf.rect(lm, y, pw, 8);
-  pdf.setFont('helvetica', 'normal');
-  pdf.setFontSize(7);
-  pdf.setTextColor(30, 30, 30);
-  cx = lm;
-  const lastName  = (emp.fullName || '').split(',')[0].trim();
-  const initials  = (emp.firstName || '').trim().charAt(0) + '.';
-  const reasonCode = (emp.terminationReason || '').split('.')[0].trim();
-  const rowVals = [
-    lastName,
-    initials,
-    emp.idNumber || '—',
-    'See Salary Schedule',
-    'See Salary Schedule',
-    emp.startDate || '—',
-    emp.lastDayOfService || '—',
-    reasonCode
-  ];
-  cols.forEach((c, i) => {
-    pdf.text(String(rowVals[i] || '—'), cx + 1, y + 5);
-    cx += c.w;
-  });
-  y += 14;
+    // ── LEGAL PARAGRAPH ───────────────────────────────────────────────────────
+    const legal = "An employer must be the seventh day of each month inform the Commissioner with all the information during the previous month regarding the employer's contact details or employees' remuneration details including new appointments and termination of service. The employer must forward this form to the Unemployment Insurance Fund at (012)337-1947/44 or 337-1580/81/82 or submit same at any branch of the UIF which is closest to the employer. The completed form can also be faxed to any of the following numbers: Pretoria (012) 309 5142/5286; Johannesburg (011) 497 3293; Durban (031) 366 2156; Polokwane (015)290 1670; Mmabatho (018) 384 2658; East London (043)701 3263; Bloemfontein (051)447 9353); Cape Town (021)441 8024; Witbank (013)656 0233; Port Elizabeth (041)506 5142; Germiston (011)873 2219; George (044)873 2568; Pietermaritzburg (033)394 5069 Or mail to:uif.declarations@labour.gov.za";
+    pdf.setFont('helvetica','normal'); pdf.setFontSize(5.5); pdf.setTextColor(40,40,40);
+    const legalLines = pdf.splitTextToSize(legal, CW);
+    pdf.text(legalLines, LM, y+3.5);
+    y += legalLines.length * 2.2 + 5;
 
-  // UIF Contributor status
-  pdf.setFont('helvetica', 'bold');
-  pdf.setFontSize(8);
-  pdf.setTextColor(80, 80, 80);
-  pdf.text('3. UIF CONTRIBUTOR STATUS', lm, y);
-  y += 4;
-  pdf.setDrawColor(200, 200, 200);
-  pdf.rect(lm, y, pw, 14);
-  pdf.setFont('helvetica', 'normal');
-  pdf.setFontSize(8);
-  pdf.setTextColor(30, 30, 30);
-  const contributor    = emp.uifExempt ? 'NO' : 'YES';
-  const nonContribCode = emp.uifExemptionReason ? emp.uifExemptionReason.split(' ')[0].replace(/\D/g,'') : '—';
-  pdf.text(`Contributor: ${contributor}`, lm + 3, y + 6);
-  pdf.text(`Non-Contribution Reason Code: ${nonContribCode}`, lm + 50, y + 6);
-  if (emp.uifExemptionReason) {
-    pdf.setFontSize(7);
-    pdf.setTextColor(100, 100, 100);
-    pdf.text(emp.uifExemptionReason, lm + 3, y + 11);
+    // ── SECTION 1: EMPLOYER DETAILS ───────────────────────────────────────────
+    pdf.setFont('helvetica','bold'); pdf.setFontSize(7.5); pdf.setTextColor(0,0,0);
+    pdf.text("1.EMPLOYER'S DETAILS", LM, y); y += 1.5;
+
+    const fld = (x, fy, w, h, label, val) => {
+      pdf.setDrawColor(150,150,150); pdf.setLineWidth(0.2); pdf.rect(x, fy, w, h);
+      pdf.setFont('helvetica','normal'); pdf.setFontSize(5.5); pdf.setTextColor(100,100,100);
+      pdf.text(label, x+1, fy+3.5);
+      if (val) { pdf.setFontSize(7); pdf.setTextColor(0,0,0); pdf.text(String(val), x+1, fy+h-2.5); }
+    };
+
+    fld(LM,    y, 45,11, '1.1  UIF Employer Reference No.', 'PENDING');
+    fld(LM+45, y, 25,11, 'Branch No.', '');
+    fld(LM+70, y, 120,11,'1.2  PAYE Reference No (If registered with SARS)', '');
+    y += 11;
+    fld(LM,    y, 95,11, '1.3  Trading name of business', 'Hospital AT Ekhaya');
+    fld(LM+95, y, 95,11, '1.4  Physical address', '24952 Hulana & Motopo, Galeshewe, Kimberley, 834');
+    y += 11;
+    fld(LM,     y, 80,9, '1.5  Address where employees in Item 2 work (if different to 1.4)', '');
+    fld(LM+80,  y, 66,9, '1.6  Postal address', '');
+    fld(LM+146, y, 44,9, '1.7  Co. Reg. No. (CIPRO No)', '');
+    y += 9;
+    fld(LM,     y, 44,9, '1.8  E-mail', 'admin@hospitalekhaya.co.za');
+    fld(LM+44,  y, 28,9, '1.9  Fax No.', '');
+    fld(LM+72,  y, 43,9, '1.10  Phone number', '082 822 6406');
+    fld(LM+115, y, 75,9, '1.11  Authorised person**', 'J. Jacques Bornman');
+    y += 11;
+
+    // ── SECTION 2: EMPLOYEE DETAILS ───────────────────────────────────────────
+    pdf.setFont('helvetica','bold'); pdf.setFontSize(7.5); pdf.setTextColor(0,0,0);
+    pdf.text('2.EMPLOYEE DETAILS', LM, y); y += 1.5;
+
+    // Columns — total 190mm
+    const cols = [
+      { s:'A',   lbl:'Surname',                  w:24 },
+      { s:'B',   lbl:'Initials',                 w:9  },
+      { s:'C',   lbl:'Identity Document Number', w:27 },
+      { s:'D*',  lbl:'Total (Gross)\nPer Month',  w:23 },
+      { s:'E*',  lbl:'Total Hours\nworked',        w:14 },
+      { s:'F',   lbl:'Date of\nEmployment',        w:20 },
+      { s:'G',   lbl:'Termination\nDate',          w:20 },
+      { s:'H',   lbl:'Termination\nReason',        w:17 },
+      { s:'I',   lbl:'Contributor',               w:18 },
+      { s:'J***',lbl:'Non-Contribution\nReason',   w:18 }
+    ]; // 24+9+27+23+14+20+20+17+18+18 = 190
+
+    const tHH = 14;
+    pdf.setFillColor(220,220,220); pdf.setDrawColor(100,100,100); pdf.setLineWidth(0.3);
+    pdf.rect(LM, y, CW, tHH, 'FD');
+    let cx = LM;
+    cols.forEach((col, i) => {
+      if (i>0) pdf.line(cx, y, cx, y+tHH);
+      pdf.setFont('helvetica','bold'); pdf.setFontSize(5.8); pdf.setTextColor(0,0,0);
+      pdf.text(col.s, cx+col.w/2, y+4, { align:'center' });
+      pdf.setFont('helvetica','normal'); pdf.setFontSize(4.8);
+      col.lbl.split('\n').forEach((line, li) => {
+        pdf.text(line, cx+col.w/2, y+8+li*3, { align:'center' });
+      });
+      cx += col.w;
+    });
+    y += tHH;
+
+    // Format indicator row
+    pdf.setFillColor(248,248,248); pdf.setLineWidth(0.2);
+    pdf.rect(LM, y, CW, 5, 'FD');
+    pdf.setFont('helvetica','normal'); pdf.setFontSize(4.5); pdf.setTextColor(120,120,120);
+    cx = LM;
+    cols.forEach((col, i) => {
+      if (i>0) pdf.line(cx, y, cx, y+5);
+      if (i===3) pdf.text('R  c', cx+col.w/2, y+3.5, { align:'center' });
+      if (i===5) pdf.text('D D  M M  Y Y', cx+col.w/2, y+3.5, { align:'center' });
+      if (i===6) pdf.text('D D  M M  Y Y', cx+col.w/2, y+3.5, { align:'center' });
+      cx += col.w;
+    });
+    y += 5;
+
+    // Data row
+    const lastName  = (emp.fullName||'').split(',')[0].trim();
+    const initials  = ((emp.firstName||(emp.fullName||'').split(',')[1]||'').trim().charAt(0)||'') + '.';
+    const rCode     = (emp.terminationReason||'').split('.')[0].trim();
+    const contrib   = emp.uifExempt ? 'NO' : 'YES';
+    const ncReason  = emp.uifExempt ? ((emp.uifExemptionReason||'').match(/^\d+/)||[''])[0]||'6' : '';
+    const grossStr  = lastGross !== null && lastGross !== undefined ? 'R '+Number(lastGross).toFixed(2) : '—';
+
+    const rowVals = [lastName, initials, emp.idNumber||'', grossStr, '—',
+      fmtDate(emp.startDate), fmtDate(emp.lastDayOfService), rCode, contrib, ncReason];
+
+    pdf.setFillColor(255,255,255); pdf.setDrawColor(100,100,100); pdf.setLineWidth(0.3);
+    pdf.rect(LM, y, CW, 10, 'FD');
+    cx = LM;
+    cols.forEach((col, i) => {
+      if (i>0) pdf.line(cx, y, cx, y+10);
+      pdf.setFont('helvetica','normal'); pdf.setFontSize(7.5); pdf.setTextColor(0,0,0);
+      pdf.text(String(rowVals[i]||''), cx+col.w/2, y+6.5, { align:'center' });
+      cx += col.w;
+    });
+    y += 10;
+
+    // 5 empty rows
+    pdf.setLineWidth(0.2);
+    for (let r=0; r<5; r++) {
+      pdf.setFillColor(255,255,255); pdf.rect(LM, y, CW, 10, 'FD');
+      cx = LM;
+      cols.forEach((col, i) => { if (i>0) pdf.line(cx, y, cx, y+10); cx += col.w; });
+      y += 10;
+    }
+    y += 6;
+
+    // ── SIGNATURE ─────────────────────────────────────────────────────────────
+    pdf.setFont('helvetica','normal'); pdf.setFontSize(7); pdf.setTextColor(0,0,0);
+    const decl = "I, ________________________________ (Name of employer), ID No.__________________________, declare that the above information is true and correct. I understand that it is an offence to make a false statement.";
+    const dLines = pdf.splitTextToSize(decl, CW);
+    pdf.text(dLines, LM, y); y += dLines.length*3.2+4;
+    pdf.text("EMPLOYER'S SIGNATURE : ____________________________", LM, y);
+    pdf.text('DATE: '+genDate, PW-RM, y, { align:'right' }); y += 6;
+
+    // ── DESCRIPTIONS + J CODES + STAMP ───────────────────────────────────────
+    if (y<213) y = 213;
+    const bH=44; const dW=CW*0.52; const jW=CW*0.35; const stW=CW-dW-jW;
+    pdf.setDrawColor(150,150,150); pdf.setLineWidth(0.2);
+    pdf.rect(LM,      y, dW,  bH);
+    pdf.rect(LM+dW,   y, jW,  bH);
+    pdf.rect(LM+dW+jW,y, stW, bH);
+
+    pdf.setFont('helvetica','bold'); pdf.setFontSize(6.5); pdf.setTextColor(0,0,0);
+    pdf.text('Description', LM+1, y+4);
+    const descs=[
+      '** If the employer is not a resident in the RSA, or is a body corporate not registered in the RSA, an authorised person must carry out the duties of the employer in terms of this Act.',
+      'D*  Remuneration means actual basic salary plus payment in kind (Declare actual gross salary)
+      If paid Weekly, convert wages to monthly salary (weekly wages X 52/12)',
+      'E*  Total hours worked, i.e. actual hours worked during the month.',
+      '      Employers may also submit these details electronically from payrolls or on the UIF's website at www.labour.org.za',
+      '      Only applicable for commercial employers, Domestic employers - provide surname and initials.',
+      '      Constructive dismissal can only be determined by the CCMA: Bargaining Council or Labour Court.'
+    ];
+    pdf.setFont('helvetica','normal'); pdf.setFontSize(5.3); pdf.setTextColor(30,30,30);
+    let dy = y+7;
+    descs.forEach(d => {
+      const ls = pdf.splitTextToSize(d, dW-2); pdf.text(ls, LM+1, dy);
+      dy += ls.length*2.3+0.5;
+    });
+
+    const jx = LM+dW;
+    pdf.setFont('helvetica','bold'); pdf.setFontSize(5.5); pdf.setTextColor(0,0,0);
+    pdf.text('Code:   J (Reason for non-contribution***', jx+1, y+4);
+    const jCodes=[
+      '1   Temporary employees (less than 24 hours per month)',
+      '2   Learners in terms of the skills development Act',
+      '3   Employees in the National and Provincial spheres of Government',
+      '4   Employees who are repatriated at end of their contract of service',
+      '5   Employees who earn commission only',
+      '6   No income paid for the payroll period',
+      '7   Employees in receipt of an Old Age Pension from the state',
+      '8   Employees who receive a pension payment from Employer',
+      '9   Above the ceiling'
+    ];
+    pdf.setFont('helvetica','normal'); pdf.setFontSize(5.3);
+    let jy = y+8;
+    jCodes.forEach(c => { pdf.text(c, jx+1, jy); jy+=3.8; });
+
+    pdf.setTextColor(100,100,100); pdf.setFontSize(5.5);
+    pdf.text("Employer's stamp (if available)", LM+dW+jW+1, y+4);
+    y += bH+2;
+
+    // ── TERMINATION CODES ─────────────────────────────────────────────────────
+    pdf.setFont('helvetica','bold'); pdf.setFontSize(6.5); pdf.setTextColor(0,0,0);
+    pdf.text('Reasons for termination codes', LM, y); y += 1.5;
+    const tRows=[
+      ['2 Deceased',       '6 Resigned',               '10  Illness/Medical boarded', '14  Business closed',           '18  Commissioning Parental'],
+      ['3 Retired',        '7 Constructive dismissal**','11  Retrenched/Staff reduction','15  Death of Domestic Employer','19  Parental Leave'],
+      ['4 Dismissed',      '8 Insolvency/Liquidation',  '12  Transfer to another Branch','16  Voluntary severance package',''],
+      ['5 Contract expired','9 Maternity/Adoption',     '13  Absconded',               '17  Reduced Work Time',          '']
+    ];
+    const tcW=CW/5;
+    pdf.setFont('helvetica','normal'); pdf.setFontSize(5.3);
+    pdf.setDrawColor(150,150,150); pdf.setLineWidth(0.2);
+    tRows.forEach(row => {
+      row.forEach((cell, ci) => {
+        pdf.rect(LM+ci*tcW, y, tcW, 5.5);
+        if (cell) pdf.text(cell, LM+ci*tcW+1, y+4);
+      });
+      y += 5.5;
+    });
+
+    pdf.setFont('helvetica','normal'); pdf.setFontSize(7); pdf.setTextColor(150,150,150);
+    pdf.text('page 1 of 1', PW-RM, PH-5, { align:'right' });
+
+    pdf.save('UI-19_'+lastName+'_'+(emp.lastDayOfService||'termination')+'.pdf');
+    showToast('UI-19 downloaded', 'success');
+
+  } catch(e) {
+    showToast('Failed: '+e.message, 'error');
+    console.error('UI-19 error:', e);
+  } finally {
+    btn.disabled = false; btn.textContent = 'Download UI-19';
   }
-  y += 18;
-
-  // Reference codes section
-  pdf.setFont('helvetica', 'bold');
-  pdf.setFontSize(7.5);
-  pdf.setTextColor(80, 80, 80);
-  pdf.text('REASON FOR TERMINATION CODES (UI-19 reference)', lm, y);
-  y += 3;
-  pdf.setFont('helvetica', 'normal');
-  pdf.setFontSize(6.5);
-  pdf.setTextColor(100, 100, 100);
-  const codeList = '2 Deceased  3 Retired  4 Dismissed  5 Contract Expired  6 Resigned  7 Constructive Dismissal  8 Insolvency/Liquidation  9 Maternity/Adoption  10 Illness/Medical Boarded  11 Retrenched  12 Transfer  13 Absconded  14 Business Closed  15 Death of Domestic Employer  16 VSP  17 Reduced Hours  18 Commissioning Parental  19 Parental Leave';
-  const lines = pdf.splitTextToSize(codeList, pw);
-  pdf.text(lines, lm, y + 4);
-  y += lines.length * 3.5 + 8;
-
-  // Signature block
-  pdf.setDrawColor(150, 150, 150);
-  pdf.line(lm, y, lm + 70, y);
-  pdf.line(lm + 100, y, lm + 160, y);
-  pdf.setFont('helvetica', 'normal');
-  pdf.setFontSize(7);
-  pdf.setTextColor(100, 100, 100);
-  pdf.text("Employer's Signature", lm, y + 4);
-  pdf.text("Date", lm + 100, y + 4);
-
-  // Footer
-  pdf.setFillColor(245, 245, 245);
-  pdf.rect(0, 285, 210, 12, 'F');
-  pdf.setFont('helvetica', 'italic');
-  pdf.setFontSize(6.5);
-  pdf.setTextColor(130, 130, 130);
-  pdf.text('This document was generated by the HAE HR Portal. Submit to the Department of Labour UIF office or via www.labour.org.za', 105, 291, { align: 'center' });
-
-  const filename = `UI19_${lastName}_${emp.lastDayOfService || 'termination'}.pdf`;
-  pdf.save(filename);
-  showToast('UI-19 downloaded', 'success');
 };
 
 // ── SALARY SCHEDULE PDF ───────────────────────────────────────────────────────
