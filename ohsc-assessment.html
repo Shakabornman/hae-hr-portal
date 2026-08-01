@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HAE OHSC Compliance</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap');
+  :root {
+    --navy:#1E3A5F;--teal:#1A4A35;--steel:#4A7FA5;--paper:#F7F6F3;
+    --white:#FFFFFF;--ink:#1A1C22;--mid:#6B7280;--rule:#E2E0DA;
+    --green:#2EAA6F;--amber:#D97706;--red:#C0392B;
+    --light-navy:#EBF1F7;--light-teal:#E6F4EE;--light-red:#FEF2F2;--light-amber:#FEF3C7;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Inter',sans-serif;background:var(--paper);color:var(--ink);font-size:14px;line-height:1.5;min-height:100vh;}
+  #login-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--navy);padding:24px;}
+  .login-card{background:var(--white);border-radius:12px;padding:48px 40px;width:100%;max-width:400px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.3);}
+  .login-logo{font-family:'Space Grotesk',sans-serif;font-size:11px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:var(--mid);margin-bottom:6px;}
+  .login-title{font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:700;color:var(--navy);margin-bottom:6px;}
+  .login-sub{font-size:13px;color:var(--mid);margin-bottom:36px;}
+  .btn-google{display:flex;align-items:center;justify-content:center;gap:12px;width:100%;padding:14px 20px;background:var(--white);border:1.5px solid var(--rule);border-radius:8px;font-size:14px;font-weight:500;color:var(--ink);cursor:pointer;transition:all 0.15s;}
+  .btn-google:hover{background:var(--paper);border-color:var(--steel);}
+  .login-error{color:var(--red);font-size:12px;margin-top:14px;display:none;}
+  .no-access{font-size:13px;color:var(--mid);margin-top:14px;line-height:1.6;}
+
+  #app{display:none;min-height:100vh;}
+  .app-header{background:var(--navy);padding:0 24px;display:flex;align-items:center;justify-content:space-between;height:56px;position:sticky;top:0;z-index:100;}
+  .app-brand{font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:700;color:var(--white);letter-spacing:0.04em;}
+  .app-brand span{color:#7EB8D9;font-weight:500;margin-left:6px;font-size:12px;}
+  .header-user{display:flex;align-items:center;gap:10px;}
+  .user-name{font-size:12px;color:#9CA3AF;}
+  .btn-signout{font-size:11px;color:#6B7280;background:none;border:1px solid #374151;border-radius:4px;padding:4px 10px;cursor:pointer;}
+  .btn-signout:hover{color:var(--white);border-color:#6B7280;}
+
+  .dept-tabs{background:var(--white);border-bottom:1px solid var(--rule);display:flex;padding:0 24px;overflow-x:auto;}
+  .dept-tab{padding:14px 20px;font-family:'Space Grotesk',sans-serif;font-size:12px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:var(--mid);background:none;border:none;border-bottom:3px solid transparent;cursor:pointer;white-space:nowrap;}
+  .dept-tab.active{color:var(--navy);border-bottom-color:var(--navy);}
+
+  .app-main{max-width:760px;margin:0 auto;padding:24px 20px 60px;}
+
+  .progress-card{background:var(--white);border:1px solid var(--rule);border-radius:10px;padding:18px 20px;margin-bottom:20px;}
+  .progress-top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px;}
+  .progress-title{font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:700;color:var(--navy);}
+  .progress-pct{font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:700;color:var(--teal);}
+  .progress-track{height:8px;background:var(--rule);border-radius:4px;overflow:hidden;}
+  .progress-fill{height:100%;background:var(--teal);border-radius:4px;transition:width 0.3s;}
+  .progress-meta{font-size:12px;color:var(--mid);margin-top:8px;display:flex;gap:14px;flex-wrap:wrap;}
+  .progress-meta .dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:4px;vertical-align:middle;}
+
+  .tool-group{margin-bottom:22px;}
+  .tool-head{font-family:'Space Grotesk',sans-serif;font-size:12px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--mid);margin-bottom:10px;padding-left:2px;}
+
+  .crit-row{background:var(--white);border:1px solid var(--rule);border-radius:8px;padding:14px 16px;margin-bottom:8px;cursor:pointer;transition:all 0.15s;}
+  .crit-row:hover{border-color:var(--steel);box-shadow:0 2px 8px rgba(0,0,0,0.06);}
+  .crit-row-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:6px;}
+  .crit-ref{font-family:'Space Grotesk',sans-serif;font-size:11px;font-weight:700;color:var(--steel);}
+  .crit-text{font-size:13px;color:var(--ink);line-height:1.45;}
+  .crit-meta{font-size:11px;color:var(--mid);margin-top:6px;}
+
+  .pill{font-size:10px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;padding:3px 9px;border-radius:20px;white-space:nowrap;flex-shrink:0;}
+  .pill-not-assessed{background:var(--rule);color:var(--mid);}
+  .pill-compliant{background:var(--light-teal);color:var(--teal);}
+  .pill-partial{background:var(--light-amber);color:#92400E;}
+  .pill-non-compliant{background:var(--light-red);color:var(--red);}
+  .pill-na{background:var(--light-navy);color:var(--navy);}
+
+  .shortcut-row{display:flex;justify-content:flex-end;margin-top:8px;}
+  .btn-shortcut{font-size:11px;font-weight:600;color:var(--teal);background:var(--light-teal);border:1px solid #A7F3D0;border-radius:6px;padding:5px 12px;cursor:pointer;}
+  .btn-shortcut:hover{background:#d5f0e3;}
+
+  .escalated-banner{background:var(--light-red);border:1px solid #FECACA;color:var(--red);border-radius:6px;padding:8px 12px;font-size:12px;font-weight:600;margin-bottom:14px;display:flex;align-items:center;gap:8px;}
+
+  .loading{text-align:center;padding:48px;color:var(--mid);font-size:13px;}
+  .spinner{width:24px;height:24px;border:2px solid var(--rule);border-top-color:var(--navy);border-radius:50%;animation:spin 0.8s linear infinite;margin:0 auto 12px;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+
+  .modal-overlay{position:fixed;inset:0;background:rgba(20,30,45,0.55);display:none;align-items:flex-end;justify-content:center;z-index:300;}
+  .modal-overlay.show{display:flex;}
+  .modal-card{background:var(--white);border-radius:16px 16px 0 0;width:100%;max-width:560px;max-height:88vh;overflow-y:auto;box-shadow:0 -10px 40px rgba(0,0,0,0.3);}
+  @media(min-width:640px){
+    .modal-overlay{align-items:center;}
+    .modal-card{border-radius:12px;max-height:80vh;}
+  }
+  .modal-head{padding:18px 20px;border-bottom:1px solid var(--rule);}
+  .modal-ref{font-family:'Space Grotesk',sans-serif;font-size:11px;font-weight:700;color:var(--steel);margin-bottom:4px;}
+  .modal-crit-text{font-size:14px;color:var(--ink);line-height:1.5;}
+  .modal-close{position:absolute;top:14px;right:16px;background:none;border:none;font-size:20px;color:var(--mid);cursor:pointer;}
+  .modal-body{padding:20px;}
+
+  .status-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px;}
+  .status-btn{padding:16px 10px;border-radius:10px;border:2px solid var(--rule);background:var(--white);font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:600;color:var(--ink);cursor:pointer;transition:all 0.15s;text-align:center;}
+  .status-btn:hover{border-color:var(--steel);}
+  .status-btn.selected{border-width:2px;}
+  .status-btn[data-status="Compliant"].selected{border-color:var(--teal);background:var(--light-teal);color:var(--teal);}
+  .status-btn[data-status="Partial"].selected{border-color:var(--amber);background:var(--light-amber);color:#92400E;}
+  .status-btn[data-status="Non-Compliant"].selected{border-color:var(--red);background:var(--light-red);color:var(--red);}
+  .status-btn[data-status="N/A"].selected{border-color:var(--navy);background:var(--light-navy);color:var(--navy);}
+
+  .evidence-section{display:none;}
+  .evidence-section.show{display:block;}
+  .field-group{margin-bottom:14px;}
+  .field-group label{display:block;font-size:12px;font-weight:600;color:var(--mid);margin-bottom:5px;letter-spacing:0.03em;}
+  .field-group textarea,.field-group input{width:100%;padding:10px 12px;border:1.5px solid var(--rule);border-radius:6px;font-family:'Inter',sans-serif;font-size:13px;color:var(--ink);background:var(--white);outline:none;}
+  .field-group textarea:focus,.field-group input:focus{border-color:var(--steel);}
+  .field-group textarea{resize:vertical;min-height:64px;}
+
+  .upload-drop{border:2px dashed var(--rule);border-radius:8px;padding:20px;text-align:center;cursor:pointer;position:relative;font-size:12px;color:var(--mid);}
+  .upload-drop input{position:absolute;inset:0;opacity:0;cursor:pointer;}
+  .upload-drop.has-file{border-color:var(--teal);background:var(--light-teal);color:var(--teal);}
+
+  .modal-footer{padding:16px 20px;border-top:1px solid var(--rule);display:flex;gap:10px;}
+  .btn-cancel{flex:1;padding:12px;background:none;border:1.5px solid var(--rule);border-radius:8px;font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:600;color:var(--mid);cursor:pointer;}
+  .btn-submit{flex:2;padding:12px;background:var(--teal);border:none;border-radius:8px;font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:600;color:var(--white);cursor:pointer;}
+  .btn-submit:disabled{background:var(--mid);cursor:not-allowed;}
+
+  .toast{position:fixed;bottom:24px;right:24px;left:24px;max-width:400px;margin:0 auto;background:var(--ink);color:var(--white);padding:12px 20px;border-radius:8px;font-size:13px;font-weight:500;box-shadow:0 4px 16px rgba(0,0,0,0.2);opacity:0;transform:translateY(8px);transition:all 0.2s;pointer-events:none;z-index:400;text-align:center;}
+  .toast.show{opacity:1;transform:translateY(0);}
+  .toast.success{background:var(--teal);}
+  .toast.error{background:var(--red);}
+</style>
+</head>
+<body>
+
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-logo">Hospital at Ekhaya</div>
+    <div class="login-title">OHSC Compliance</div>
+    <div class="login-sub">Sign in to view and log your department's assessments</div>
+    <button class="btn-google" onclick="signInGoogle()">
+      <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615z"/><path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z"/><path fill="#FBBC05" d="M3.964 10.71c-.18-.54-.282-1.117-.282-1.71s.102-1.17.282-1.71V4.958H.957C.347 6.173 0 7.548 0 9s.348 2.827.957 4.042l3.007-2.332z"/><path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z"/></svg>
+      Sign in with Google
+    </button>
+    <div class="login-error" id="login-error"></div>
+    <div class="no-access" id="no-access" style="display:none">
+      Your account isn't yet set up for OHSC access. Contact the COO to be added.
+    </div>
+  </div>
+</div>
+
+<div id="app">
+  <header class="app-header">
+    <div class="app-brand">HOSPITAL AT EKHAYA <span>OHSC Compliance</span></div>
+    <div class="header-user">
+      <span class="user-name" id="user-name-display"></span>
+      <button class="btn-signout" onclick="signOutUser()">Sign out</button>
+    </div>
+  </header>
+
+  <nav class="dept-tabs" id="dept-tabs"></nav>
+
+  <main class="app-main">
+    <div id="content">
+      <div class="loading"><div class="spinner"></div>Loading criteria…</div>
+    </div>
+  </main>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<div class="modal-overlay" id="assess-modal">
+  <div class="modal-card">
+    <div class="modal-head" style="position:relative">
+      <button class="modal-close" onclick="closeModal()">✕</button>
+      <div class="modal-ref" id="modal-ref">—</div>
+      <div class="modal-crit-text" id="modal-crit-text">—</div>
+    </div>
+    <div class="modal-body">
+      <div class="status-grid" id="status-grid">
+        <button class="status-btn" data-status="Compliant" onclick="selectStatus('Compliant')">✓ Compliant</button>
+        <button class="status-btn" data-status="Partial" onclick="selectStatus('Partial')">◐ Partial</button>
+        <button class="status-btn" data-status="Non-Compliant" onclick="selectStatus('Non-Compliant')">✕ Non-Compliant</button>
+        <button class="status-btn" data-status="N/A" onclick="selectStatus('N/A')">— N/A</button>
+      </div>
+
+      <div class="evidence-section" id="evidence-section">
+        <div class="field-group">
+          <label>What's the situation? <span id="evidence-required" style="color:var(--red)"></span></label>
+          <textarea id="evidence-note" placeholder="Brief note on what you found…"></textarea>
+        </div>
+        <div class="field-group">
+          <label>Photo evidence (optional)</label>
+          <div class="upload-drop" id="upload-drop">
+            <input type="file" id="evidence-file" accept=".jpg,.jpeg,.png,.pdf" onchange="handleEvidenceFile(this.files[0])">
+            <span id="upload-drop-text">📷 Tap to attach a photo or document</span>
+          </div>
+        </div>
+        <div class="field-group" id="target-date-group" style="display:none">
+          <label>Target date to resolve</label>
+          <input type="date" id="target-date">
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+      <button class="btn-submit" id="btn-submit" onclick="submitAssessment()" disabled>Save Assessment</button>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getAuth, signInWithPopup, GoogleAuthProvider, signOut as fbSignOut, onAuthStateChanged }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { getStorage, ref as storageRef, uploadBytesResumable, getDownloadURL }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
+import { getFirestore, collection, getDocs, doc, getDoc, addDoc, query, where }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey:            "AIzaSyBla6UBluNcWVKPSU8U30IuTSubLb7R2Kc",
+  authDomain:        "hae-vuma-92fca.firebaseapp.com",
+  projectId:         "hae-vuma-92fca",
+  storageBucket:     "hae-vuma-92fca.firebasestorage.app",
+  messagingSenderId: "1052424261313",
+  appId:             "1:1052424261313:web:a4bebe68d6f9ba14fa0e40"
+};
+
+const app     = initializeApp(firebaseConfig);
+const auth    = getAuth(app);
+const db      = getFirestore(app);
+const storage = getStorage(app);
+const provider = new GoogleAuthProvider();
+
+// Maps access tags to the department they unlock. 'executive' unlocks all
+// departments present in ohscTools, regardless of this list — add a new
+// entry here when a later phase introduces a new department/tag pair.
+const TAG_TO_DEPARTMENT = {
+  'ohsc-support': 'Support Services',
+  'ohsc-kitchen': 'Kitchen',
+};
+
+let myAccessLevels = [];
+let myDepartments  = [];
+let activeDept     = null;
+let allTools       = [];
+let allCriteria    = [];
+let currentStatusMap = {}; // ref -> ohscCurrentStatus doc data
+let modalCriterion  = null;
+let selectedStatus  = null;
+let evidenceFile     = null;
+let evidenceUploadedUrl = null;
+
+window.signInGoogle = async () => {
+  try { await signInWithPopup(auth, provider); }
+  catch(e) { showLoginError(e.message); }
+};
+
+window.signOutUser = async () => {
+  await fbSignOut(auth);
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('app').style.display = 'none';
+};
+
+function showLoginError(msg) {
+  const el = document.getElementById('login-error');
+  el.textContent = msg; el.style.display = 'block';
+}
+
+onAuthStateChanged(auth, async (user) => {
+  if (!user) return;
+  try {
+    const acSnap = await getDoc(doc(db, 'access_control', user.uid));
+    if (!acSnap.exists()) {
+      await fbSignOut(auth);
+      document.getElementById('no-access').style.display = 'block';
+      return;
+    }
+    myAccessLevels = acSnap.data().accessLevels || [];
+    const isExecutive = myAccessLevels.includes('executive');
+
+    myDepartments = isExecutive
+      ? Object.values(TAG_TO_DEPARTMENT)
+      : myAccessLevels.map(tag => TAG_TO_DEPARTMENT[tag]).filter(Boolean);
+    // De-dupe in case someone somehow holds both tags
+    myDepartments = [...new Set(myDepartments)];
+
+    if (!myDepartments.length) {
+      await fbSignOut(auth);
+      document.getElementById('no-access').style.display = 'block';
+      return;
+    }
+
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    document.getElementById('user-name-display').textContent = user.displayName || user.email;
+
+    await loadReferenceData();
+    activeDept = myDepartments[0];
+    renderDeptTabs();
+    await renderDeptContent();
+  } catch(e) {
+    console.error(e);
+    showToast('Failed to load access — try refreshing', 'error');
+  }
+});
+
+async function loadReferenceData() {
+  const [toolsSnap, criteriaSnap] = await Promise.all([
+    getDocs(collection(db, 'ohscTools')),
+    getDocs(collection(db, 'ohscCriteria')),
+  ]);
+  allTools    = toolsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+  allCriteria = criteriaSnap.docs.map(d => ({ id: d.id, ...d.data() }))
+    .sort((a,b) => (a.sortOrder||0) - (b.sortOrder||0));
+}
+
+async function loadCurrentStatusForDept(dept) {
+  const q = query(collection(db, 'ohscCurrentStatus'), where('department', '==', dept));
+  const snap = await getDocs(q);
+  const map = {};
+  snap.docs.forEach(d => { map[d.id] = d.data(); });
+  return map;
+}
+
+function renderDeptTabs() {
+  const nav = document.getElementById('dept-tabs');
+  if (myDepartments.length <= 1) { nav.style.display = 'none'; return; }
+  nav.innerHTML = myDepartments.map(dept =>
+    `<button class="dept-tab ${dept===activeDept?'active':''}" onclick="switchDept('${dept}')">${dept}</button>`
+  ).join('');
+}
+
+window.switchDept = async (dept) => {
+  activeDept = dept;
+  renderDeptTabs();
+  await renderDeptContent();
+};
+
+async function renderDeptContent() {
+  const content = document.getElementById('content');
+  content.innerHTML = '<div class="loading"><div class="spinner"></div>Loading criteria…</div>';
+
+  currentStatusMap = await loadCurrentStatusForDept(activeDept);
+  const deptCriteria = allCriteria.filter(c => c.department === activeDept);
+  const deptTools = allTools.filter(t => t.department === activeDept)
+    .sort((a,b) => (a.name||'').localeCompare(b.name||''));
+
+  const total = deptCriteria.length;
+  const compliant = deptCriteria.filter(c => currentStatusMap[c.ref]?.status === 'Compliant').length;
+  const pct = total ? Math.round((compliant/total)*100) : 0;
+  const notAssessed = deptCriteria.filter(c => !currentStatusMap[c.ref] || currentStatusMap[c.ref].status === undefined).length;
+  const escalatedCount = deptCriteria.filter(c => currentStatusMap[c.ref]?.escalated).length;
+
+  let html = `
+    <div class="progress-card">
+      <div class="progress-top">
+        <div class="progress-title">${activeDept}</div>
+        <div class="progress-pct">${pct}%</div>
+      </div>
+      <div class="progress-track"><div class="progress-fill" style="width:${pct}%"></div></div>
+      <div class="progress-meta">
+        <span><span class="dot" style="background:var(--teal)"></span>${compliant} compliant</span>
+        <span><span class="dot" style="background:var(--mid)"></span>${notAssessed} not assessed</span>
+        ${escalatedCount ? `<span style="color:var(--red);font-weight:600">⚠ ${escalatedCount} needs attention</span>` : ''}
+      </div>
+    </div>
+  `;
+
+  if (escalatedCount > 0) {
+    html += `<div class="escalated-banner">⚠ ${escalatedCount} item${escalatedCount>1?'s':''} in ${activeDept} need attention — non-compliant or overdue for reassessment.</div>`;
+  }
+
+  deptTools.forEach(tool => {
+    const toolCriteria = deptCriteria.filter(c => c.toolId === tool.toolId);
+    if (!toolCriteria.length) return;
+    html += `<div class="tool-group"><div class="tool-head">${tool.name}</div>`;
+    toolCriteria.forEach(c => { html += renderCriterionRow(c); });
+    html += `</div>`;
+  });
+
+  content.innerHTML = html;
+}
+
+function renderCriterionRow(c) {
+  const cs = currentStatusMap[c.ref];
+  const status = cs?.status || 'Not Assessed';
+  const pillClass = {
+    'Not Assessed': 'pill-not-assessed',
+    'Compliant': 'pill-compliant',
+    'Partial': 'pill-partial',
+    'Non-Compliant': 'pill-non-compliant',
+    'N/A': 'pill-na',
+  }[status] || 'pill-not-assessed';
+
+  const lastAssessed = cs?.lastAssessedAt
+    ? new Date(cs.lastAssessedAt).toLocaleDateString('en-ZA', { day:'numeric', month:'short' })
+    : null;
+
+  const shortcut = cs?.eligibleForShortcut && status === 'Compliant'
+    ? `<div class="shortcut-row"><button class="btn-shortcut" onclick="event.stopPropagation(); quickConfirmCompliant('${c.ref}')">✓ Still Compliant — confirm</button></div>`
+    : '';
+
+  return `
+    <div class="crit-row" onclick="openModal('${c.ref}')">
+      <div class="crit-row-top">
+        <div>
+          <div class="crit-ref">${c.ref}</div>
+          <div class="crit-text">${c.criterion}</div>
+        </div>
+        <span class="pill ${pillClass}">${status}</span>
+      </div>
+      ${lastAssessed ? `<div class="crit-meta">Last assessed ${lastAssessed} by ${cs.lastAssessedByName||'—'}</div>` : ''}
+      ${shortcut}
+    </div>
+  `;
+}
+
+window.openModal = (ref) => {
+  modalCriterion = allCriteria.find(c => c.ref === ref);
+  if (!modalCriterion) return;
+  selectedStatus = null;
+  evidenceFile = null;
+  evidenceUploadedUrl = null;
+
+  document.getElementById('modal-ref').textContent = modalCriterion.ref;
+  document.getElementById('modal-crit-text').textContent = modalCriterion.criterion;
+  document.querySelectorAll('.status-btn').forEach(b => b.classList.remove('selected'));
+  document.getElementById('evidence-section').classList.remove('show');
+  document.getElementById('evidence-note').value = '';
+  document.getElementById('target-date-group').style.display = 'none';
+  document.getElementById('target-date').value = '';
+  document.getElementById('upload-drop').classList.remove('has-file');
+  document.getElementById('upload-drop-text').textContent = '📷 Tap to attach a photo or document';
+  document.getElementById('evidence-file').value = '';
+  document.getElementById('btn-submit').disabled = true;
+
+  document.getElementById('assess-modal').classList.add('show');
+};
+
+window.closeModal = () => {
+  document.getElementById('assess-modal').classList.remove('show');
+  modalCriterion = null;
+};
+
+window.selectStatus = (status) => {
+  selectedStatus = status;
+  document.querySelectorAll('.status-btn').forEach(b => {
+    b.classList.toggle('selected', b.dataset.status === status);
+  });
+
+  const needsEvidence = status === 'Partial' || status === 'Non-Compliant';
+  document.getElementById('evidence-section').classList.toggle('show', needsEvidence);
+  document.getElementById('evidence-required').textContent = needsEvidence ? '(required)' : '';
+  document.getElementById('target-date-group').style.display = needsEvidence ? 'block' : 'none';
+
+  updateSubmitEnabled();
+};
+
+function updateSubmitEnabled() {
+  const needsEvidence = selectedStatus === 'Partial' || selectedStatus === 'Non-Compliant';
+  const noteFilled = document.getElementById('evidence-note').value.trim().length > 0;
+  document.getElementById('btn-submit').disabled = !selectedStatus || (needsEvidence && !noteFilled);
+}
+
+document.addEventListener('input', (e) => {
+  if (e.target.id === 'evidence-note') updateSubmitEnabled();
+});
+
+window.handleEvidenceFile = (file) => {
+  if (!file) return;
+  evidenceFile = file;
+  document.getElementById('upload-drop').classList.add('has-file');
+  document.getElementById('upload-drop-text').textContent = `✓ ${file.name}`;
+};
+
+window.quickConfirmCompliant = async (ref) => {
+  const criterion = allCriteria.find(c => c.ref === ref);
+  if (!criterion) return;
+  try {
+    await logAssessment(criterion, 'Compliant', '', null, null);
+    showToast(`${ref} confirmed compliant`, 'success');
+    await renderDeptContent();
+  } catch(e) {
+    showToast('Failed: ' + e.message, 'error');
+  }
+};
+
+window.submitAssessment = async () => {
+  if (!modalCriterion || !selectedStatus) return;
+  const btn = document.getElementById('btn-submit');
+  btn.disabled = true; btn.textContent = 'Saving…';
+
+  try {
+    const note = document.getElementById('evidence-note').value.trim();
+    const targetDate = document.getElementById('target-date').value || null;
+
+    let evidenceUrl = null;
+    if (evidenceFile) {
+      const safeName = evidenceFile.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+      const path = `ohsc-evidence/${modalCriterion.ref}/${Date.now()}_${safeName}`;
+      const sRef = storageRef(storage, path);
+      await uploadBytesResumable(sRef, evidenceFile);
+      evidenceUrl = await getDownloadURL(sRef);
+    }
+
+    await logAssessment(modalCriterion, selectedStatus, note, evidenceUrl, targetDate);
+    showToast('Assessment saved', 'success');
+    closeModal();
+    await renderDeptContent();
+  } catch(e) {
+    showToast('Save failed: ' + e.message, 'error');
+    btn.disabled = false;
+  } finally {
+    btn.textContent = 'Save Assessment';
+  }
+};
+
+async function logAssessment(criterion, status, note, evidenceUrl, targetDate) {
+  const user = auth.currentUser;
+  await addDoc(collection(db, 'ohscAssessments'), {
+    criterionRef: criterion.ref,
+    toolId: criterion.toolId,
+    domainId: criterion.domainId,
+    department: criterion.department,
+    phase: criterion.phase,
+    status,
+    assessedByUid: user.uid,
+    assessedByName: user.displayName || user.email,
+    assessedAt: new Date().toISOString(),
+    evidenceUrl: evidenceUrl || null,
+    evidenceNote: note || '',
+    targetDate: targetDate || null,
+  });
+}
+
+window.showToast = (msg, type = '') => {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.className = `toast ${type} show`;
+  setTimeout(() => { t.className = 'toast'; }, 3000);
+};
+</script>
+</body>
+</html>
