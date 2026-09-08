@@ -21,6 +21,15 @@
   .login-sub{font-size:13px;color:var(--mid);margin-bottom:36px;}
   .btn-google{display:flex;align-items:center;justify-content:center;gap:12px;width:100%;padding:14px 20px;background:var(--white);border:1.5px solid var(--rule);border-radius:8px;font-size:14px;font-weight:500;color:var(--ink);cursor:pointer;transition:all 0.15s;}
   .btn-google:hover{background:var(--paper);border-color:var(--steel);}
+  .btn-email-toggle{font-size:13px;color:var(--steel);background:none;border:none;cursor:pointer;text-decoration:underline;margin-top:12px;}
+  .email-login{display:none;margin-top:20px;text-align:left;}
+  .email-login.show{display:block;}
+  .field-group-login{margin-bottom:16px;}
+  .field-group-login label{display:block;font-size:12px;font-weight:600;color:var(--mid);margin-bottom:5px;letter-spacing:0.05em;text-transform:uppercase;}
+  .field-group-login input{width:100%;padding:10px 12px;border:1.5px solid var(--rule);border-radius:6px;font-family:'Inter',sans-serif;font-size:14px;color:var(--ink);background:var(--white);outline:none;}
+  .field-group-login input:focus{border-color:var(--steel);}
+  .btn-primary{width:100%;padding:12px;background:var(--navy);color:var(--white);border:none;border-radius:8px;font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:600;cursor:pointer;margin-top:4px;}
+  .btn-primary:hover{background:#162d4a;}
   .login-error{color:var(--red);font-size:12px;margin-top:14px;display:none;}
   .no-access{font-size:13px;color:var(--mid);margin-top:14px;line-height:1.6;}
 
@@ -131,6 +140,12 @@
       <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615z"/><path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z"/><path fill="#FBBC05" d="M3.964 10.71c-.18-.54-.282-1.117-.282-1.71s.102-1.17.282-1.71V4.958H.957C.347 6.173 0 7.548 0 9s.348 2.827.957 4.042l3.007-2.332z"/><path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z"/></svg>
       Sign in with Google
     </button>
+    <button class="btn-email-toggle" onclick="toggleEmailLogin()">Sign in with email instead</button>
+    <div class="email-login" id="email-login">
+      <div class="field-group-login"><label>Email</label><input type="email" id="login-email" placeholder="your@email.com"></div>
+      <div class="field-group-login"><label>Password</label><input type="password" id="login-password" placeholder="••••••••"></div>
+      <button class="btn-primary" onclick="signInEmail()">Sign In</button>
+    </div>
     <div class="login-error" id="login-error"></div>
     <div class="no-access" id="no-access" style="display:none">
       Your account isn't yet set up for OHSC access. Contact the COO to be added.
@@ -200,11 +215,11 @@
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getAuth, signInWithPopup, GoogleAuthProvider, signOut as fbSignOut, onAuthStateChanged }
+import { getAuth, signInWithPopup, GoogleAuthProvider, signInWithEmailAndPassword, signOut as fbSignOut, onAuthStateChanged }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import { getStorage, ref as storageRef, uploadBytesResumable, getDownloadURL }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
-import { getFirestore, collection, getDocs, doc, getDoc, addDoc, query, where }
+import { getFirestore, collection, getDocs, doc, getDoc, addDoc, query, where, serverTimestamp }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -228,6 +243,9 @@ const provider = new GoogleAuthProvider();
 const TAG_TO_DEPARTMENT = {
   'ohsc-support': 'Support Services',
   'ohsc-kitchen': 'Kitchen',
+  'ohsc-nursing-wards': 'Nursing - Wards',
+  'ohsc-nursing-ae': 'Nursing - A&E',
+  'ohsc-nursing-mhcu': 'Nursing - Mental Health',
 };
 
 let myAccessLevels = [];
@@ -245,6 +263,15 @@ window.signInGoogle = async () => {
   try { await signInWithPopup(auth, provider); }
   catch(e) { showLoginError(e.message); }
 };
+
+window.signInEmail = async () => {
+  const email = document.getElementById('login-email').value;
+  const pass  = document.getElementById('login-password').value;
+  try { await signInWithEmailAndPassword(auth, email, pass); }
+  catch(e) { showLoginError("Invalid email or password."); }
+};
+
+window.toggleEmailLogin = () => document.getElementById('email-login').classList.toggle('show');
 
 window.signOutUser = async () => {
   await fbSignOut(auth);
@@ -517,7 +544,7 @@ async function logAssessment(criterion, status, note, evidenceUrl, targetDate) {
     status,
     assessedByUid: user.uid,
     assessedByName: user.displayName || user.email,
-    assessedAt: new Date().toISOString(),
+    assessedAt: serverTimestamp(),
     evidenceUrl: evidenceUrl || null,
     evidenceNote: note || '',
     targetDate: targetDate || null,
