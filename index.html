@@ -430,6 +430,7 @@ import { getStorage, ref, uploadBytesResumable, getDownloadURL, deleteObject }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
 import { getFirestore, collection, getDocs, query, where, doc, updateDoc, setDoc }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-functions.js";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.50.0";
 
 // ── SUPABASE ─────────────────────────────────────────────────────────────────
@@ -461,6 +462,8 @@ const auth    = getAuth(app);
 const db      = getFirestore(app);
 const storage = getStorage(app);
 const provider = new GoogleAuthProvider();
+// AI document reading goes through the signed-in function aiAssist (EC-049); the prompt and key live on the server.
+const aiAssist = httpsCallable(getFunctions(app, 'europe-west1'), 'aiAssist');
 
 const DOC_TYPES = [
   'ID Document','CV / Resume','Qualifications / Certificates','SANC Registration',
@@ -1721,20 +1724,8 @@ async function readDocumentWithAI(file) {
   const isPDF  = file.name.toLowerCase().endsWith('.pdf') || file.type === 'application/pdf';
   const mediaType = isPDF ? 'application/pdf' : (file.type || 'image/jpeg');
   const empList = allEmployees.map(e => `${e.fullName} (${e.employeeNumber})`).join(', ');
-  const prompt = `You are reading a scanned employment document for HOSPITAL AT EKHAYA.\n\nIdentify:\n1. The person's full name (if visible)\n2. The document type — one of: ID Document, CV / Resume, Qualifications / Certificates, SANC Registration, Professional Indemnity, Medical Certificate / Fitness to Work, Reference Letters, Signed Employment Contract, Other\n3. Any registration numbers, ID numbers, or certificate numbers visible\n4. Your confidence level: High, Medium, or Low\n\nKnown employees: ${empList}\n\nReturn ONLY valid JSON, no other text:\n{\n  "name": "full name as written or null",\n  "documentType": "document type from the list above",\n  "referenceNumber": "any ID/reg/certificate number or null",\n  "confidence": "High or Medium or Low",\n  "notes": "any other relevant detail"\n}`;
-  const response = await fetch('https://hae-motivation-proxy.shakabornman.workers.dev', {
-    method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      model: 'claude-sonnet-4-6', max_tokens: 500,
-      messages: [{ role: 'user', content: [
-        { type: isPDF ? 'document' : 'image', source: { type: 'base64', media_type: mediaType, data: base64 } },
-        { type: 'text', text: prompt }
-      ]}]
-    })
-  });
-  const data = await response.json();
-  const text = (data.content?.[0]?.text || '{}').replace(/```json|```/g,'').trim();
-  const result = JSON.parse(text);
+  const res = await aiAssist({ task: 'hrDoc', mediaType, data: base64, empList });
+  const result = res.data.result;
   if (result.name) {
     const nameLower = result.name.toLowerCase();
     const matched = allEmployees.find(e =>
